@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Norma - Buk PM Assistant</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-icon">
+          <img src="assets/norma_icon.png" alt="Norma">
+        </div>
+        <div>
+          <div class="brand-title">Norma Assistant</div>
+          <div class="brand-subtitle">Sincronizador de Reuniones Buk</div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 4px; align-items: center;">
+        <button id="btnOpenSidePanel" class="icon-btn" title="Fijar en panel lateral derecho">
+          📌
+        </button>
+        <button id="btnOpenSettings" class="icon-btn" title="Configuración / Credenciales">
+          ⚙️
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Filtros de Fecha y Rango Horario -->
+      <section class="control-card">
+        <div class="control-group">
+          <label class="control-label" for="targetDate">📅 Fecha de Reuniones</label>
+          <input type="date" id="targetDate" class="date-input">
+        </div>
+
+        <div class="control-group">
+          <label class="control-label">⏱️ Bloque Horario</label>
+          <div class="chips-container">
+            <button type="button" class="chip-btn" data-preset="morning" id="chipMorning">☀️ Mañana</button>
+            <button type="button" class="chip-btn" data-preset="afternoon" id="chipAfternoon">🌇 Tarde</button>
+            <button type="button" class="chip-btn active" data-preset="all" id="chipAllDay">📅 Todo el día</button>
+          </div>
+
+          <input type="hidden" id="startTime" value="00:00">
+          <input type="hidden" id="endTime" value="23:59">
+        </div>
+
+        <button id="btnSync" class="btn-primary">
+          <span>🔄 Sincronizar Reuniones</span>
+        </button>
+      </section>
+
+      <!-- Status / Alerts / Loading -->
+      <div id="statusContainer" class="status-container"></div>
+
+      <!-- Resultados / Header de Borradores -->
+      <div id="resultsHeader" class="results-header" style="display: none;">
+        <div id="resultsCount" class="results-title">📋 Borradores Listos (0)</div>
+        <button id="btnPublishAll" class="batch-btn">
+          <span>✨ Publicar Todo</span>
+        </button>
+      </div>
+
+      <!-- Contenedor de Tarjetas de Borradores -->
+      <div id="draftsContainer"></div>
+    </main>
+  </div>
+
+  <!-- Modal de Configuración -->
+  <div id="settingsModal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">⚙️ Configuración de Norma</div>
+        <button id="btnCloseSettings" class="icon-btn">✖</button>
+      </div>
+      <div class="modal-body">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid #e2e8f0;">
+          <span id="sidepanelLockBadge" style="font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 10px; background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0;">
+            🔒 Bloqueado
+          </span>
+          <button type="button" id="btnToggleLockSidepanel" class="btn-tool-secondary" style="font-size: 11px; padding: 4px 10px; cursor: pointer;">
+            <span id="textToggleLockSidepanel">🔓 Desbloquear</span>
+          </button>
+        </div>
+
+        <div class="form-group">
+          <label for="inputGasUrl">URL Web App de Google Apps Script</label>
+          <input type="url" id="inputGasUrl" class="form-input" placeholder="https://script.google.com/macros/s/.../exec" disabled>
+          <div class="form-help">Pega la URL de tu Web App desplegada en Google Apps Script.</div>
+        </div>
+
+        <div class="form-group">
+          <label for="inputMondayApiKey">API Key de Monday.com</label>
+          <input type="password" id="inputMondayApiKey" class="form-input" placeholder="eyJhbGciOiJIUzI1NiJ9..." disabled>
+          <div class="form-help">Tu token personal de Monday (Mi Perfil > Desarrolladores).</div>
+        </div>
+
+        <div class="form-group">
+          <label for="inputBoardId">ID del Tablero Master</label>
+          <input type="text" id="inputBoardId" class="form-input" value="1400120846" disabled>
+          <div class="form-help">ID del tablero Master de Clientes Asistencia.</div>
+        </div>
+
+        <div class="form-group">
+          <label for="inputGeminiApiKey">Gemini API Key (Google AI Studio)</label>
+          <input type="password" id="inputGeminiApiKey" class="form-input" placeholder="AIzaSy..." disabled>
+          <div class="form-help">Para el Consultor de Monday y redacción con IA.</div>
+        </div>
+
+        <div class="form-group">
+          <label for="selectGeminiModel">Modelo Gemini</label>
+          <select id="selectGeminiModel" class="form-input" disabled>
+            <option value="gemini-3.7-flash" selected>⚡ Gemini 3.7 Flash (Recomendado)</option>
+            <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+            <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+            <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="btnCancelSettings" class="btn-secondary">Cancelar</button>
+        <button id="btnSaveSettings" class="btn-primary" style="width: auto; padding: 8px 16px;">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toastNotification" class="toast-notification"></div>
+
+  <!-- Scripts -->
+  <script type="module" src="js/sidepanel_app.js"></script>
+</body>
+</html>

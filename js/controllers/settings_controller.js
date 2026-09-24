@@ -1,0 +1,288 @@
+/**
+ * Norma Hub - Controlador de Ajustes y Configuración
+ */
+
+import { getConfig, saveConfig } from '../core/config.js';
+import { extractFolderId, extractFolderIds, showToast } from '../core/ui_helpers.js';
+import { firebaseService } from '../services/firebase_service.js';
+
+const ALL_SETTINGS_INPUT_IDS = [
+  // Conexiones Principales & IA
+  'inputGasUrl',
+  'inputMondayApiKey',
+  'inputMondayKey',
+  'inputBoardId',
+  'inputGeminiApiKey',
+  'selectGeminiModel',
+  // Rutas de Google Drive
+  'inputRootDriveFolder',
+  'inputMeetRecordingsFolder',
+  'inputSlidesKickoffTemplate',
+  // Plantillas de Correo & Firebase
+  'dashCfgProjectId',
+  'dashCfgApiKey',
+  'dashCfgCurrentUser',
+  'dashCfgSenderName'
+];
+
+let isGlobalLocked = true;
+
+/**
+ * Controla el bloqueo/desbloqueo global de TODOS los campos de Ajustes
+ */
+export function setGlobalLock(locked) {
+  isGlobalLocked = locked;
+
+  ALL_SETTINGS_INPUT_IDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.disabled = locked;
+    }
+  });
+
+  // Dashboard Global Badge & Toggle Button
+  const badge = document.getElementById('globalLockStatusBadge');
+  const icon = document.getElementById('globalLockIcon');
+  const text = document.getElementById('globalLockText');
+
+  if (badge) {
+    if (locked) {
+      badge.innerHTML = '🔒 Bloqueado';
+      badge.style.background = '#f1f5f9';
+      badge.style.color = '#64748b';
+      badge.style.borderColor = '#e2e8f0';
+    } else {
+      badge.innerHTML = '🔓 Edición Habilitada';
+      badge.style.background = '#fef3c7';
+      badge.style.color = '#92400e';
+      badge.style.borderColor = '#fcd34d';
+    }
+  }
+
+  if (icon && text) {
+    if (locked) {
+      icon.textContent = '🔓';
+      text.textContent = 'Desbloquear para editar';
+    } else {
+      icon.textContent = '🔒';
+      text.textContent = 'Volver a bloquear';
+    }
+  }
+
+  // Sidepanel controls
+  const spBadge = document.getElementById('sidepanelLockBadge');
+  const spText = document.getElementById('textToggleLockSidepanel');
+  if (spBadge) {
+    if (locked) {
+      spBadge.textContent = '🔒 Bloqueado';
+      spBadge.style.background = '#f1f5f9';
+      spBadge.style.color = '#64748b';
+      spBadge.style.borderColor = '#e2e8f0';
+    } else {
+      spBadge.textContent = '🔓 Edición Habilitada';
+      spBadge.style.background = '#fef3c7';
+      spBadge.style.color = '#92400e';
+      spBadge.style.borderColor = '#fcd34d';
+    }
+  }
+  if (spText) {
+    spText.textContent = locked ? '🔓 Desbloquear' : '🔒 Bloquear';
+  }
+}
+
+// Aliases para compatibilidad
+export const setConnectionsLock = setGlobalLock;
+export const setFirebaseLock = setGlobalLock;
+
+/**
+ * Resuelve un ID o URL de asset a una URL utilizable para previsualización directa
+ */
+export function getBannerImageUrl(assetStr) {
+  if (!assetStr) return '';
+  const s = assetStr.trim();
+  if (s.startsWith('http://') || s.startsWith('https://')) {
+    const driveMatch = s.match(/[-\w]{25,}/);
+    if (driveMatch && (s.includes('drive.google.com') || s.includes('docs.google.com'))) {
+      return `https://drive.google.com/thumbnail?id=${driveMatch[0]}&sz=w800`;
+    }
+    return s;
+  }
+  if (/^[a-zA-Z0-9_-]{20,}$/.test(s)) {
+    return `https://drive.google.com/thumbnail?id=${s}&sz=w800`;
+  }
+  return s;
+}
+
+export function initSettingsController() {
+  loadSavedSettings();
+
+  const btnSaveSettings = document.getElementById('btnSaveSettings');
+  if (btnSaveSettings) {
+    btnSaveSettings.addEventListener('click', handleSaveSettings);
+  }
+
+  // Botón maestro de bloqueo/desbloqueo global en Dashboard
+  const btnToggleGlobal = document.getElementById('btnToggleGlobalLock');
+  if (btnToggleGlobal) {
+    btnToggleGlobal.addEventListener('click', () => {
+      setGlobalLock(!isGlobalLocked);
+      if (!isGlobalLocked) {
+        showToast('🔓 Toda la configuración ha sido desbloqueada para edición');
+        const firstInput = document.getElementById('inputGasUrl');
+        if (firstInput) firstInput.focus();
+      } else {
+        showToast('🔒 Toda la configuración ha sido bloqueada');
+      }
+    });
+  }
+
+  // Botón de bloqueo/desbloqueo en Sidepanel
+  const btnToggleLockSidepanel = document.getElementById('btnToggleLockSidepanel');
+  if (btnToggleLockSidepanel) {
+    btnToggleLockSidepanel.addEventListener('click', () => {
+      setGlobalLock(!isGlobalLocked);
+      if (!isGlobalLocked) {
+        showToast('🔓 Configuración desbloqueada para edición');
+        const firstInput = document.getElementById('inputGasUrl');
+        if (firstInput) firstInput.focus();
+      } else {
+        showToast('🔒 Configuración bloqueada');
+      }
+    });
+  }
+
+  // Soporte para modal de settings en Sidepanel
+  const btnSettings = document.getElementById('btnSettings');
+  const modalSettings = document.getElementById('modalSettings') || document.getElementById('settingsModal');
+  const btnCloseSettings = document.getElementById('btnCloseSettings');
+  const btnCancelSettings = document.getElementById('btnCancelSettings');
+
+  if (btnSettings && modalSettings) {
+    btnSettings.addEventListener('click', () => {
+      loadSavedSettings();
+      setGlobalLock(true);
+      modalSettings.classList.add('active');
+    });
+  }
+
+  if (btnCloseSettings && modalSettings) {
+    btnCloseSettings.addEventListener('click', () => modalSettings.classList.remove('active'));
+  }
+
+  if (btnCancelSettings && modalSettings) {
+    btnCancelSettings.addEventListener('click', () => modalSettings.classList.remove('active'));
+  }
+}
+
+export async function loadSavedSettings() {
+  const config = await getConfig();
+
+  const inputGasUrl = document.getElementById('inputGasUrl');
+  const inputMondayKey = document.getElementById('inputMondayApiKey') || document.getElementById('inputMondayKey');
+  const inputBoardId = document.getElementById('inputBoardId');
+  const inputDriveFolderId = document.getElementById('inputRootDriveFolder') || document.getElementById('inputDriveFolderId');
+  const inputMeetRecordingsId = document.getElementById('inputMeetRecordingsFolder') || document.getElementById('inputMeetRecordingsId');
+  const inputSlidesKickoffTemplate = document.getElementById('inputSlidesKickoffTemplate');
+  const inputGeminiApiKey = document.getElementById('inputGeminiApiKey');
+  const selectGeminiModel = document.getElementById('selectGeminiModel');
+
+  if (inputGasUrl) inputGasUrl.value = config.gasUrl || '';
+  if (inputMondayKey) inputMondayKey.value = config.mondayApiKey || '';
+  if (inputBoardId) inputBoardId.value = config.boardId || '';
+  if (inputDriveFolderId) inputDriveFolderId.value = config.rootDriveFolderId || '';
+  if (inputMeetRecordingsId) inputMeetRecordingsId.value = config.meetRecordingsFolderId || '';
+  if (inputSlidesKickoffTemplate) inputSlidesKickoffTemplate.value = config.slidesKickoffTemplateId || '';
+  if (inputGeminiApiKey) inputGeminiApiKey.value = config.geminiApiKey || '';
+  if (selectGeminiModel) selectGeminiModel.value = config.geminiModel || 'gemini-3.7-flash';
+
+  // Mantener todos los campos bloqueados inicialmente
+  setGlobalLock(true);
+
+  // Cargar configuración de Firebase / Plantillas
+  try {
+    const fbConfig = await firebaseService.getConfig();
+    const inputFbProjectId = document.getElementById('dashCfgProjectId');
+    const inputFbApiKey = document.getElementById('dashCfgApiKey');
+    const inputFbCurrentUser = document.getElementById('dashCfgCurrentUser');
+    const inputFbSenderName = document.getElementById('dashCfgSenderName');
+
+    if (inputFbProjectId) inputFbProjectId.value = fbConfig.projectId || '';
+    if (inputFbApiKey) inputFbApiKey.value = fbConfig.apiKey || '';
+    if (inputFbCurrentUser) inputFbCurrentUser.value = fbConfig.currentUserEmail || '';
+    if (inputFbSenderName) inputFbSenderName.value = fbConfig.senderName || '';
+  } catch (err) {
+    console.warn('Error al cargar config de Firebase:', err);
+  }
+
+  updateDriveHeaderLinks(config);
+}
+
+export async function handleSaveSettings() {
+  const currentConfig = await getConfig();
+
+  const inputGasUrl = document.getElementById('inputGasUrl');
+  const inputMondayKey = document.getElementById('inputMondayApiKey') || document.getElementById('inputMondayKey');
+  const inputBoardId = document.getElementById('inputBoardId');
+  const inputDriveFolderId = document.getElementById('inputRootDriveFolder') || document.getElementById('inputDriveFolderId');
+  const inputMeetRecordingsId = document.getElementById('inputMeetRecordingsFolder') || document.getElementById('inputMeetRecordingsId');
+  const inputSlidesKickoffTemplate = document.getElementById('inputSlidesKickoffTemplate');
+  const inputGeminiApiKey = document.getElementById('inputGeminiApiKey');
+  const selectGeminiModel = document.getElementById('selectGeminiModel');
+
+  const newConfig = {
+    ...currentConfig,
+    gasUrl: inputGasUrl ? inputGasUrl.value.trim() : (currentConfig.gasUrl || ''),
+    mondayApiKey: inputMondayKey ? inputMondayKey.value.trim() : (currentConfig.mondayApiKey || ''),
+    boardId: inputBoardId ? inputBoardId.value.trim() : (currentConfig.boardId || ''),
+    rootDriveFolderId: inputDriveFolderId ? inputDriveFolderId.value.trim() : (currentConfig.rootDriveFolderId || ''),
+    meetRecordingsFolderId: inputMeetRecordingsId ? inputMeetRecordingsId.value.trim() : (currentConfig.meetRecordingsFolderId || ''),
+    slidesKickoffTemplateId: inputSlidesKickoffTemplate ? inputSlidesKickoffTemplate.value.trim() : (currentConfig.slidesKickoffTemplateId || ''),
+    geminiApiKey: inputGeminiApiKey ? inputGeminiApiKey.value.trim() : (currentConfig.geminiApiKey || ''),
+    geminiModel: selectGeminiModel ? selectGeminiModel.value : (currentConfig.geminiModel || 'gemini-3.7-flash')
+  };
+
+  await saveConfig(newConfig);
+
+  // Guardar configuración de Firebase / Plantillas
+  try {
+    const inputFbProjectId = document.getElementById('dashCfgProjectId');
+    const inputFbApiKey = document.getElementById('dashCfgApiKey');
+    const inputFbCurrentUser = document.getElementById('dashCfgCurrentUser');
+    const inputFbSenderName = document.getElementById('dashCfgSenderName');
+
+    if (inputFbProjectId) {
+      const fbConfig = {
+        projectId: inputFbProjectId.value.trim(),
+        apiKey: inputFbApiKey ? inputFbApiKey.value.trim() : '',
+        currentUserEmail: inputFbCurrentUser ? inputFbCurrentUser.value.trim() : '',
+        senderName: inputFbSenderName ? inputFbSenderName.value.trim() : ''
+      };
+
+      await firebaseService.saveConfig(fbConfig);
+    }
+  } catch (err) {
+    console.warn('Error al guardar config de Firebase:', err);
+  }
+
+  updateDriveHeaderLinks(newConfig);
+
+  // Volver a bloquear toda la configuración tras guardar
+  setGlobalLock(true);
+
+  const modalSettings = document.getElementById('modalSettings') || document.getElementById('settingsModal');
+  if (modalSettings) modalSettings.classList.remove('active');
+
+  showToast('💾 ¡Configuración guardada correctamente!');
+}
+
+export function updateDriveHeaderLinks(config) {
+  const rootId = extractFolderId(config.rootDriveFolderId || '12tym4HlpvxjiyVZEMt-q59f3H7V3uqea');
+  const recIds = extractFolderIds(config.meetRecordingsFolderId || '1k72An18C2pObM9hbk7JJNXCyPfglCxds');
+  const primaryRecId = recIds.length > 0 ? recIds[0] : '1k72An18C2pObM9hbk7JJNXCyPfglCxds';
+
+  const linkRootFolder = document.getElementById('linkRootFolder');
+  const linkRecordingsFolder = document.getElementById('linkRecordingsFolder');
+
+  if (linkRootFolder) linkRootFolder.href = `https://drive.google.com/drive/folders/${rootId}`;
+  if (linkRecordingsFolder) linkRecordingsFolder.href = `https://drive.google.com/drive/folders/${primaryRecId}`;
+}

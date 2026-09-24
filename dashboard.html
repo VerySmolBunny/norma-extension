@@ -1,0 +1,1417 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Norma Hub - Buk PM Assistant</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="libs/suneditor/suneditor.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Sidebar de Navegación -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="brand">
+          <div class="brand-icon">
+            <img src="assets/norma_icon.png" alt="Norma">
+          </div>
+          <div class="brand-text">
+            <h1>Norma Hub</h1>
+            <span>Buk PM Operations</span>
+          </div>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section-title">HERRAMIENTAS</div>
+        <button class="nav-item active" data-view="viewSync" id="navSync">
+          <span class="nav-icon">🔄</span>
+          <span class="nav-label">Sincronizador Reuniones</span>
+        </button>
+        <button class="nav-item" data-view="viewOnboarding" id="navOnboarding">
+          <span class="nav-icon">🚀</span>
+          <span class="nav-label">Asignación & Onboarding</span>
+          <span class="badge badge-accent" id="sidebarOnboardingBadge" style="margin-left: auto; font-size: 10px; padding: 2px 6px;">5</span>
+        </button>
+        <button class="nav-item" data-view="viewCierre" id="navCierre">
+          <span class="nav-icon">🏁</span>
+          <span class="nav-label">Cierre Implementación</span>
+        </button>
+        <button class="nav-item" data-view="viewDrive" id="navDrive">
+          <span class="nav-icon">📁</span>
+          <span class="nav-label">Drive & Grabaciones</span>
+        </button>
+        <button class="nav-item" data-view="viewTemplates" id="navTemplates">
+          <span class="nav-icon">✉️</span>
+          <span class="nav-label">Plantillas de Correo</span>
+        </button>
+
+        <div class="nav-section-title" style="margin-top: 24px;">AJUSTES</div>
+        <button class="nav-item" data-view="viewSettings" id="navSettings">
+          <span class="nav-icon">⚙️</span>
+          <span class="nav-label">Configuración</span>
+        </button>
+      </nav>
+    </aside>
+
+    <!-- Contenido Principal -->
+    <main class="main-content">
+      <!-- Top Bar -->
+      <header class="topbar">
+        <div class="view-title-container">
+          <h2 id="currentViewTitle">🔄 Sincronizador de Reuniones y Minutas</h2>
+        </div>
+        <div class="topbar-actions">
+          <span class="today-badge" id="todayBadge">Hoy</span>
+        </div>
+      </header>
+
+      <!-- Vistas de la Aplicación -->
+      <div class="content-body">
+        <!-- VISTA 1: SINCRONIZADOR DE REUNIONES -->
+        <section id="viewSync" class="app-view active">
+          <!-- Control Bar Principal -->
+          <div class="control-panel">
+            <div class="control-row">
+              <div class="control-group">
+                <label class="control-label" for="targetDate">📅 Fecha de Reuniones</label>
+                <input type="date" id="targetDate" class="date-input">
+              </div>
+
+              <div class="control-group">
+                <label class="control-label">⏱️ Bloque Horario</label>
+                <div class="chips-container">
+                  <button type="button" class="chip-btn" data-preset="morning" id="chipMorning">☀️ Mañana (08:00 - 13:30)</button>
+                  <button type="button" class="chip-btn" data-preset="afternoon" id="chipAfternoon">🌇 Tarde (13:30 - 19:00)</button>
+                  <button type="button" class="chip-btn active" data-preset="all" id="chipAllDay">📅 Todo el día</button>
+                </div>
+
+                <input type="hidden" id="startTime" value="00:00">
+                <input type="hidden" id="endTime" value="23:59">
+              </div>
+
+              <div>
+                <button id="btnSync" class="btn-primary">
+                  <span>🔄 Sincronizar Reuniones</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Status / Alertas -->
+          <div id="statusContainer"></div>
+
+          <!-- Header de Resultados -->
+          <div id="resultsHeader" class="results-header" style="display: none;">
+            <div id="resultsCount" class="results-title">📋 Borradores Listos (0)</div>
+            <button id="btnPublishAll" class="batch-btn">
+              <span>✨ Publicar Todo Aprobado en Monday</span>
+            </button>
+          </div>
+
+          <!-- Lista de Tarjetas de Borradores -->
+          <div id="draftsContainer"></div>
+        </section>
+
+        <!-- VISTA 2: GESTOR DRIVE & GRABACIONES -->
+        <section id="viewDrive" class="app-view">
+          <!-- Banner de Enlaces Rápidos a Drive -->
+          <div class="drive-banner-card">
+            <div class="drive-banner-info">
+              <div class="drive-banner-title">📁 Conexión con Google Drive</div>
+              <div class="drive-banner-paths">
+                <span>Raíz Clientes: <a id="linkRootFolder" href="https://drive.google.com/drive/folders/12tym4HlpvxjiyVZEMt-q59f3H7V3uqea" target="_blank">Abrir en Drive ↗</a></span>
+                <span>•</span>
+                <span>Grabaciones Meet: <a id="linkRecordingsFolder" href="https://drive.google.com/drive/folders/1k72An18C2pObM9hbk7JJNXCyPfglCxds" target="_blank">Abrir en Drive ↗</a></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Subtabs de Drive -->
+          <div class="subtabs-bar">
+            <button class="subtab-btn active" id="subtabFolders" data-subview="subviewFolders">
+              <span>📁 1. Crear y Sincronizar Carpetas</span>
+            </button>
+            <button class="subtab-btn" id="subtabRecordings" data-subview="subviewRecordings">
+              <span>🎥 2. Clasificador de Grabaciones Meet</span>
+            </button>
+          </div>
+
+          <!-- SUBVISTA 1: CREACIÓN Y SINCRONIZACIÓN DE CARPETAS -->
+          <div id="subviewFolders" class="subview-pane active">
+            <div class="tool-card">
+              <div class="tool-card-header">
+                <div>
+                  <h3>📁 Sincronizador de Carpetas por Cliente</h3>
+                  <p>Compara tus clientes asignados en Monday.com con las subcarpetas existentes en Google Drive y crea las que falten con un solo clic.</p>
+                </div>
+              </div>
+
+              <!-- Filtros de Asignación -->
+              <div class="control-panel" style="margin-top: 16px; margin-bottom: 16px; background: #f8fafc;">
+                <div style="font-weight: 700; font-size: 12px; color: #334155; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+                  <span>📅 Filtro por Fecha de Asignación en Monday</span>
+                  <span style="font-size: 11px; font-weight: normal; color: #64748b;">(Columna: COE Asist (Asign))</span>
+                </div>
+
+                <div class="control-row">
+                  <div class="control-group">
+                    <label class="control-label" for="folderFilterStart">Desde</label>
+                    <input type="date" id="folderFilterStart" class="date-input" value="2026-06-01">
+                  </div>
+
+                  <div class="control-group">
+                    <label class="control-label" for="folderFilterEnd">Hasta</label>
+                    <input type="date" id="folderFilterEnd" class="date-input" value="2026-09-30">
+                  </div>
+
+                  <div class="control-group" style="flex: 1;">
+                    <label class="control-label">Atajos Rápidos</label>
+                    <div class="chips-container">
+                      <button type="button" class="chip-btn active" id="chipFilterJunSep">☀️ Jun - Sep 2026</button>
+                      <button type="button" class="chip-btn" id="chipFilterLast30">📅 Últimos 30 días</button>
+                      <button type="button" class="chip-btn" id="chipFilter2026">📅 Todo el 2026</button>
+                      <button type="button" class="chip-btn" id="chipFilterAll">🌐 Sin filtro</button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <button id="btnSyncFolders" class="btn-primary">
+                      <span>🔍 Comparar Monday vs Drive</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div style="margin-top: 12px; display: flex; align-items: center; gap: 8px;">
+                  <input type="checkbox" id="chkExcludeFinished" id="chkExcludeFinished" style="cursor: pointer;" checked>
+                  <label for="chkExcludeFinished" style="font-size: 12px; color: #475569; cursor: pointer; font-weight: 600;">
+                    Excluir clientes ya terminados (Etapa: Finalizado)
+                  </label>
+                </div>
+              </div>
+
+              <!-- Status Alert para Folders -->
+              <div id="folderStatusContainer" style="margin-top: 16px;"></div>
+
+              <!-- Estadísticas de Carpetas (KPIs) -->
+              <div id="folderStatsContainer" class="kpi-grid" style="display: none;">
+                <div class="kpi-card">
+                  <div class="kpi-value" id="kpiMondayClients">0</div>
+                  <div class="kpi-label">Clientes en Monday</div>
+                </div>
+                <div class="kpi-card kpi-success">
+                  <div class="kpi-value" id="kpiExistingFolders">0</div>
+                  <div class="kpi-label">Carpetas Existentes en Drive</div>
+                </div>
+                <div class="kpi-card kpi-warning">
+                  <div class="kpi-value" id="kpiMissingFolders">0</div>
+                  <div class="kpi-label">Carpetas Faltantes por Crear</div>
+                </div>
+              </div>
+
+              <!-- Acción de Crear Faltantes -->
+              <div id="missingActionRow" class="action-alert-row" style="display: none;">
+                <div class="action-alert-text">
+                  <strong>⚠️ Tienes carpetas pendientes de crear.</strong> Al presionar el botón se crearán automáticamente en tu carpeta raíz de Google Drive.
+                </div>
+                <button id="btnCreateMissingFolders" class="btn-accent">
+                  <span>✨ Crear Carpetas Faltantes en Drive</span>
+                </button>
+              </div>
+
+              <!-- Tablas de Resultados (Faltantes y Existentes) -->
+              <div id="folderResultsContainer" style="display: none; margin-top: 20px;">
+                <!-- Lista de Faltantes -->
+                <div id="missingSection" style="margin-bottom: 24px;">
+                  <h4 style="font-size: 14px; color: #b45309; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+                    <span>⚠️ Clientes sin Carpeta en Drive</span>
+                    <span id="badgeMissingCount" class="badge badge-warning">0</span>
+                  </h4>
+                  <div id="missingList" class="folder-items-list"></div>
+                </div>
+
+                <!-- Lista de Existentes -->
+                <div id="existingSection">
+                  <h4 style="font-size: 14px; color: #047857; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+                    <span>✅ Carpetas ya Creadas y Vinculadas</span>
+                    <span id="badgeExistingCount" class="badge badge-success">0</span>
+                  </h4>
+                  <div id="existingList" class="folder-items-list"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SUBVISTA 2: CLASIFICADOR DE GRABACIONES -->
+          <div id="subviewRecordings" class="subview-pane">
+            <div class="tool-card">
+              <div class="tool-card-header">
+                <div>
+                  <h3>🎥 Clasificador Inteligente de Grabaciones de Google Meet</h3>
+                  <p>Escanea los videos de tu carpeta de grabaciones, identifica el cliente según el título y los mueve a su carpeta correspondiente. Las grabaciones sin cliente seguro permanecerán en la carpeta original.</p>
+                </div>
+                <button id="btnScanRecordings" class="btn-primary">
+                  <span>🔍 Escanear Grabaciones</span>
+                </button>
+              </div>
+
+              <!-- Panel de Filtros para Grabaciones -->
+              <div class="filters-card" style="background: #f8fafc; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px; margin-top: 16px; margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                  <span style="font-size: 12px; font-weight: 700; color: #334155; text-transform: uppercase; letter-spacing: 0.5px;">
+                    📅 Filtrar Grabaciones por Fecha de Grabación
+                  </span>
+                  <div class="chips-container" style="margin: 0;">
+                    <button type="button" class="chip-btn active" id="chipRecJunSep">☀️ Jun - Sep 2026</button>
+                    <button type="button" class="chip-btn" id="chipRecToday">📅 Hoy</button>
+                    <button type="button" class="chip-btn" id="chipRecYesterday">📅 Ayer</button>
+                    <button type="button" class="chip-btn" id="chipRecLast7">📅 Últimos 7 días</button>
+                    <button type="button" class="chip-btn" id="chipRecLast30">📅 Últimos 30 días</button>
+                    <button type="button" class="chip-btn" id="chipRecAll">🌐 Todas</button>
+                  </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                  <div>
+                    <label style="font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 4px; display: block;">Desde (Fecha inicio)</label>
+                    <input type="date" id="recordingFilterStart" class="form-input" style="padding: 6px 10px; font-size: 13px;" value="2026-06-01">
+                  </div>
+                  <div>
+                    <label style="font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 4px; display: block;">Hasta (Fecha fin)</label>
+                    <input type="date" id="recordingFilterEnd" class="form-input" style="padding: 6px 10px; font-size: 13px;" value="2026-09-30">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Status Alert para Grabaciones -->
+              <div id="recordingStatusContainer" style="margin-top: 16px;"></div>
+
+              <!-- Estadísticas de Grabaciones (KPIs) -->
+              <div id="recordingStatsContainer" class="kpi-grid" style="display: none;">
+                <div class="kpi-card">
+                  <div class="kpi-value" id="kpiTotalRecordings">0</div>
+                  <div class="kpi-label">Total Grabaciones Escaneadas</div>
+                </div>
+                <div class="kpi-card kpi-success">
+                  <div class="kpi-value" id="kpiClassifiedRecordings">0</div>
+                  <div class="kpi-label">Listas para Mover</div>
+                </div>
+                <div class="kpi-card kpi-neutral">
+                  <div class="kpi-value" id="kpiUnmatchedRecordings">0</div>
+                  <div class="kpi-label">Sin coincidencia (No se moverán)</div>
+                </div>
+              </div>
+
+              <!-- Acción de Mover Grabaciones -->
+              <div id="moveActionRow" class="action-alert-row" style="display: none;">
+                <div class="action-alert-text">
+                  <strong>🚀 Grabaciones emparejadas con éxito.</strong> Confirma el movimiento de los videos seleccionados a las carpetas de sus respectivos clientes.
+                </div>
+                <button id="btnMoveRecordings" class="btn-accent">
+                  <span>🚀 Mover Grabaciones Seleccionadas</span>
+                </button>
+              </div>
+
+              <!-- Lista de Grabaciones Clasificadas -->
+              <div id="recordingResultsContainer" style="display: none; margin-top: 20px;">
+                <!-- Clasificadas -->
+                <div id="classifiedSection" style="margin-bottom: 24px;">
+                  <h4 style="font-size: 14px; color: #1d4ed8; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+                    <span>🎯 Grabaciones Identificadas (Listas para mover)</span>
+                    <span id="badgeClassifiedCount" class="badge badge-info">0</span>
+                  </h4>
+                  <div id="classifiedList" class="recordings-table-container"></div>
+                </div>
+
+                <!-- Sin Coincidencia (Intactas) -->
+                <div id="unmatchedSection">
+                  <h4 style="font-size: 14px; color: #64748b; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+                    <span>🛡️ Grabaciones sin Coincidencia Segura (Permanecerán en la carpeta original)</span>
+                    <span id="badgeUnmatchedCount" class="badge badge-neutral">0</span>
+                  </h4>
+                  <div id="unmatchedList" class="recordings-table-container"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- VISTA: ASIGNACIÓN Y ONBOARDING DE CLIENTES -->
+        <section id="viewOnboarding" class="app-view">
+          <div class="onboarding-layout">
+            <!-- Columna 1: Clientes pendientes de Kick Off -->
+            <div class="onboarding-sidebar">
+              <div class="onboarding-sidebar-header">
+                <div class="onboarding-sidebar-title">
+                  <span>🚀</span>
+                  <span>Por Celebrar KO</span>
+                </div>
+                <button class="btn btn-xs btn-outline" id="btnRefreshOnboarding" title="Actualizar lista desde Monday.com">
+                  <span>🔄</span>
+                </button>
+              </div>
+              <p style="font-size: 12px; color: #64748b; margin: 0 0 12px 0;">
+                Clientes asignados en Monday en espera de contacto inicial:
+              </p>
+              <div id="onboardingClientsList" class="onboarding-clients-list">
+                <!-- Se inyectan las tarjetas interactivas de clientes -->
+              </div>
+            </div>
+
+            <!-- Columna 2: Asistente y Automatización de Onboarding -->
+            <div class="onboarding-main">
+              <!-- Ficha del Cliente Seleccionado -->
+              <div class="onboarding-hero-card">
+                <div class="hero-header-row">
+                  <div class="hero-title-group">
+                    <h2 id="selectedClientName">Selecciona un cliente</h2>
+                  </div>
+                  <button id="btnExecuteFullOnboarding" class="btn-execute-all" title="Ejecuta: Monday + Drive + Google Slides + Gmail">
+                    <span>✨ Ejecutar Onboarding (1-Clic)</span>
+                  </button>
+                </div>
+
+                <!-- Grid de Datos Clave -->
+                <div class="client-info-grid">
+                  <div class="info-box">
+                    <span class="info-label">👤 Contraparte</span>
+                    <span class="info-val" id="selectedClientContraparte">-</span>
+                  </div>
+                  <div class="info-box">
+                    <span class="info-label">✉️ Correo</span>
+                    <span class="info-val" id="selectedClientEmail">-</span>
+                  </div>
+                  <div class="info-box">
+                    <span class="info-label">📞 Teléfono</span>
+                    <span class="info-val" id="selectedClientPhone">-</span>
+                  </div>
+                  <div class="info-box">
+                    <span class="info-label">🌐 URL Buk</span>
+                    <span class="info-val" id="selectedClientUrl">-</span>
+                  </div>
+                  <div class="info-box">
+                    <span class="info-label">🏢 Dotación & Recintos</span>
+                    <span class="info-val" id="selectedClientDotacion">-</span>
+                  </div>
+                </div>
+
+                <!-- Notas y Requerimientos de Sales -->
+                <div class="sales-notes-box">
+                  <strong>💡 Notas de Sales & Requerimientos:</strong>
+                  <div id="selectedClientSalesNotes" style="margin-top: 4px;">-</div>
+                </div>
+              </div>
+
+              <!-- 4 Pasos de la Automatización -->
+              <div class="automation-steps-grid">
+                <!-- Paso 1: Monday -->
+                <div class="automation-step-card" id="stepCardMonday">
+                  <div>
+                    <div class="step-card-header">
+                      <span class="step-number" id="stepNumMonday">1</span>
+                      <div class="step-title-wrapper">
+                        <div class="step-title-row">
+                          <h4 class="step-title">Etapa en Monday</h4>
+                          <span class="step-ticket-tag" id="stepTicketMonday" style="display: none;">✓ Listo</span>
+                        </div>
+                        <p class="step-desc">Cambiar a "Coordinando Kick Off"</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div id="statusMondayUpdate" class="status-step-badge hidden"></div>
+                  <button id="btnUpdateMondayStage" class="step-action-btn">
+                    <span>🎯 Actualizar Etapa</span>
+                  </button>
+                </div>
+
+                <!-- Paso 2: Drive -->
+                <div class="automation-step-card" id="stepCardDrive">
+                  <div>
+                    <div class="step-card-header">
+                      <span class="step-number" id="stepNumDrive">2</span>
+                      <div class="step-title-wrapper">
+                        <div class="step-title-row">
+                          <h4 class="step-title">Carpeta en Drive</h4>
+                          <span class="step-ticket-tag" id="stepTicketDrive" style="display: none;">✓ Lista</span>
+                        </div>
+                        <p class="step-desc" id="targetDriveFolderPath">/Clientes/[Nombre]</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div id="statusDriveFolder" class="status-step-badge hidden"></div>
+                  <button id="btnCreateDriveFolder" class="step-action-btn">
+                    <span>📁 Crear / Verificar Carpeta</span>
+                  </button>
+                </div>
+
+                <!-- Paso 3: Google Slides (Kick Off) -->
+                <div class="automation-step-card" id="stepCardSlides">
+                  <div>
+                    <div class="step-card-header">
+                      <span class="step-number" id="stepNumSlides">3</span>
+                      <div class="step-title-wrapper">
+                        <div class="step-title-row">
+                          <h4 class="step-title">Slides de Kick Off</h4>
+                          <span class="step-ticket-tag" id="stepTicketSlides" style="display: none;">✓ Listo</span>
+                        </div>
+                        <p class="step-desc">Personalizar 'Alcance del proyecto'</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div id="statusKickoffSlides" class="status-step-badge hidden"></div>
+                  <button id="btnCreateKickoffSlides" class="step-action-btn">
+                    <span>📊 Generar Google Slides</span>
+                  </button>
+                </div>
+
+                <!-- Paso 4: Gmail Draft -->
+                <div class="automation-step-card" id="stepCardGmail">
+                  <div>
+                    <div class="step-card-header">
+                      <span class="step-number" id="stepNumGmail">4</span>
+                      <div class="step-title-wrapper">
+                        <div class="step-title-row">
+                          <h4 class="step-title">Borrador en Gmail</h4>
+                          <span class="step-ticket-tag" id="stepTicketGmail" style="display: none;">✓ Creado</span>
+                        </div>
+                        <p class="step-desc">Directo a tu bandeja de borradores</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div id="statusGmailDraft" class="status-step-badge hidden"></div>
+                  <button id="btnCreateGmailDraft" class="step-action-btn">
+                    <span>✉️ Crear Borrador</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Vista y Previsualización del Correo de Bienvenida -->
+              <div class="welcome-email-section">
+                <div class="email-section-header">
+                  <div class="email-section-title">
+                    <span>📧</span>
+                    <span>Correo de Bienvenida</span>
+                    <span class="badge badge-success" style="font-size: 11px; padding: 3px 8px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                      <span>🔗</span> Sincronizado con Plantillas
+                    </span>
+                  </div>
+                  <div class="email-header-right-controls">
+                    <div class="email-template-picker-wrapper">
+                      <label for="selectOnboardingTemplate" style="font-size: 12px; font-weight: 700; color: #475569;">Plantilla:</label>
+                      <select id="selectOnboardingTemplate" class="form-input-select" style="font-size: 12px; font-weight: 600; padding: 4px 8px; border-radius: 6px; border: 1px solid #cbd5e1; background: #ffffff; color: #0f172a; max-width: 240px; cursor: pointer;">
+                        <option value="tpl_bienvenida_asistencia">🚀 Bienvenida a Buk Asistencia</option>
+                        <option value="tpl_cierre_implementacion">🏁 Cierre de Implementación y Grabaciones</option>
+                      </select>
+                      <button type="button" id="btnEditTemplateInManager" class="btn-outline-action" title="Abrir y editar esta plantilla en el Gestor de Plantillas de Correo">
+                        ✏️ Editar Plantilla
+                      </button>
+                    </div>
+                    <div class="email-tabs">
+                      <button class="email-tab-btn active" id="tabEmailPreview">Vista Previa</button>
+                      <button class="email-tab-btn" id="tabEmailEdit">Editar Datos</button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Contenedor Formulario de Edición (Oculto por defecto) -->
+                <div id="emailEditContainer" style="display: none; margin-bottom: 16px;">
+                  <div class="email-edit-form">
+                    <div class="form-group">
+                      <label class="form-label" for="editClientGreetingName">Nombre en el Saludo (¡Hola equipo ...!)</label>
+                      <input type="text" id="editClientGreetingName" class="form-input-text">
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label" for="editRecipientEmail">Correo Destinatario</label>
+                      <input type="email" id="editRecipientEmail" class="form-input-text">
+                    </div>
+                    <div class="form-group-full">
+                      <label class="form-label" for="editEmailSubject">Asunto del Correo</label>
+                      <input type="text" id="editEmailSubject" class="form-input-text">
+                    </div>
+                    <div class="form-group-full">
+                      <label class="form-label" for="editAgendaUrl">Enlace de tu Agenda (Google Calendar)</label>
+                      <input type="url" id="editAgendaUrl" class="form-input-text" value="" placeholder="https://calendar.app.google/...">
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Contenedor de Vista Previa HTML -->
+                <div id="emailPreviewContainer">
+                  <!-- Se inyecta la previsualización del correo con diseño Buk -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- VISTA: CIERRE DE IMPLEMENTACIÓN -->
+        <section id="viewCierre" class="app-view">
+          <div class="onboarding-layout">
+            <!-- Columna 1: Selección y Búsqueda de Clientes -->
+            <div class="onboarding-sidebar">
+              <div class="onboarding-sidebar-header">
+                <div class="onboarding-sidebar-title">
+                  <span>🏁</span>
+                  <span>Clientes en Cartera</span>
+                </div>
+                <button class="btn btn-xs btn-outline" id="btnRefreshCierreClients" title="Actualizar clientes desde Monday.com">
+                  <span>🔄</span>
+                </button>
+              </div>
+
+              <!-- Buscador interactivo de clientes -->
+              <div style="margin-bottom: 10px;">
+                <input type="text" id="cierreClientSearch" class="form-input" placeholder="🔍 Buscar cliente..." style="width: 100%; font-size: 12px; padding: 6px 10px; border-radius: 6px;">
+              </div>
+
+              <div style="display: flex; gap: 6px; margin-bottom: 12px;">
+                <button type="button" class="chip-btn active" id="chipCierreFilterVigentes" style="font-size: 11px; padding: 3px 8px;">Vigentes</button>
+                <button type="button" class="chip-btn" id="chipCierreFilterAll" style="font-size: 11px; padding: 3px 8px;">Todos</button>
+              </div>
+
+              <p style="font-size: 12px; color: #64748b; margin: 0 0 10px 0;">
+                Selecciona el cliente a cerrar:
+              </p>
+              <div id="cierreClientsList" class="onboarding-clients-list">
+                <!-- Se inyectan las tarjetas interactivas de clientes -->
+              </div>
+            </div>
+
+            <!-- Columna 2: Panel de Cierre de Implementación -->
+            <div class="onboarding-main">
+              <!-- Ficha del Cliente Seleccionado -->
+              <div class="onboarding-hero-card">
+                <div class="hero-header-row">
+                  <div class="hero-title-group">
+                    <h2 id="cierreSelectedClientName">Selecciona un cliente para cerrar</h2>
+                    <div style="display: flex; gap: 8px; margin-top: 4px;">
+                      <span class="badge" id="cierreBadgeEstado" style="display: none;">Estado: -</span>
+                      <span class="badge" id="cierreBadgeEtapa" style="display: none;">Etapa: -</span>
+                    </div>
+                  </div>
+                  <button id="btnExecuteFullCierre" class="btn-execute-all" style="display: none;" title="Ejecuta: Borrador en Gmail + Resumen IA + Finalizar en Monday">
+                    <span>⚡ Ejecutar Flujo de Cierre (1-Clic)</span>
+                  </button>
+                </div>
+
+                <!-- Grid de Datos Clave -->
+                <div class="client-info-grid">
+                  <div class="info-box">
+                    <span class="info-label">👤 Contraparte</span>
+                    <span class="info-val" id="cierreClientContraparte">-</span>
+                  </div>
+                  <div class="info-box">
+                    <span class="info-label">✉️ Correo</span>
+                    <span class="info-val" id="cierreClientEmail">-</span>
+                  </div>
+                  <div class="info-box">
+                    <span class="info-label">📞 Teléfono</span>
+                    <span class="info-val" id="cierreClientPhone">-</span>
+                  </div>
+                  <div class="info-box">
+                    <span class="info-label">🌐 URL Buk</span>
+                    <span class="info-val" id="cierreClientUrl">-</span>
+                  </div>
+                  <div class="info-box">
+                    <span class="info-label">📁 Carpeta Drive</span>
+                    <span class="info-val" id="cierreClientDriveLink">
+                      <span style="color: #94a3b8;">Sin carpeta asociada</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 3 Pasos del Cierre de Implementación -->
+              <div class="automation-steps-grid" style="grid-template-columns: repeat(3, 1fr);">
+                <!-- Paso 1: Correo de Cierre -->
+                <div class="automation-step-card" id="stepCardCierreMail">
+                  <div>
+                    <div class="step-card-header">
+                      <span class="step-number" id="stepNumCierreMail">1</span>
+                      <div class="step-title-wrapper">
+                        <div class="step-title-row">
+                          <h4 class="step-title">Borrador de Cierre</h4>
+                          <span class="step-ticket-tag" id="stepTicketCierreMail" style="display: none;">✓ Borrador Creado</span>
+                        </div>
+                        <p class="step-desc">Plantilla oficial con link a grabaciones</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div id="statusCierreMail" class="status-step-badge hidden"></div>
+                  <div style="display: flex; gap: 6px; margin-top: auto;">
+                    <button id="btnCreateCierreDraft" class="step-action-btn" style="flex: 1;">
+                      <span>✉️ Crear Borrador</span>
+                    </button>
+                    <a id="btnOpenGmailDrafts" href="https://mail.google.com/mail/u/0/#drafts" target="_blank" class="step-action-btn" style="width: 40px; text-decoration: none; display: flex; align-items: center; justify-content: center; padding: 0;" title="Abrir Borradores de Gmail">
+                      <span>↗</span>
+                    </a>
+                  </div>
+                </div>
+
+                <!-- Paso 2: Resumen IA -->
+                <div class="automation-step-card" id="stepCardCierreAi">
+                  <div>
+                    <div class="step-card-header">
+                      <span class="step-number" id="stepNumCierreAi">2</span>
+                      <div class="step-title-wrapper">
+                        <div class="step-title-row">
+                          <h4 class="step-title">Resumen con Gemini</h4>
+                          <span class="step-ticket-tag" id="stepTicketCierreAi" style="display: none;">✓ Generado</span>
+                        </div>
+                        <p class="step-desc" id="cierreTranscriptsFoundDesc">Lee transcripciones de Drive</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div id="statusCierreAi" class="status-step-badge hidden"></div>
+                  <button id="btnGenerateCierreSummary" class="step-action-btn">
+                    <span>🤖 Generar Resumen IA</span>
+                  </button>
+                </div>
+
+                <!-- Paso 3: Monday -->
+                <div class="automation-step-card" id="stepCardCierreMonday">
+                  <div>
+                    <div class="step-card-header">
+                      <span class="step-number" id="stepNumCierreMonday">3</span>
+                      <div class="step-title-wrapper">
+                        <div class="step-title-row">
+                          <h4 class="step-title">Finalizar en Monday</h4>
+                          <span class="step-ticket-tag" id="stepTicketCierreMonday" style="display: none;">✓ Finalizado</span>
+                        </div>
+                        <p class="step-desc">Estado y Etapa a "Finalizado"</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div id="statusCierreMonday" class="status-step-badge hidden"></div>
+                  <button id="btnFinalizeMondayStage" class="step-action-btn">
+                    <span>🎯 Marcar Finalizado</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Sección Detalle Resumen IA (Paso 2) -->
+              <div class="welcome-email-section" id="cierreSummarySection" style="margin-top: 16px;">
+                <div class="email-section-header">
+                  <div class="email-section-title">
+                    <span>📝</span>
+                    <span>Resumen de Implementación Asistencia (3 Secciones Oficiales)</span>
+                    <span id="cierreModelBadge" class="badge badge-accent" style="display: none; font-size: 11px;">Gemini 3.7 Flash</span>
+                  </div>
+                  <div style="display: flex; gap: 8px; align-items: center;">
+                    <span id="cierreCopyFeedback" style="font-size: 12px; color: #16a34a; font-weight: 600; display: none;">¡Copiado al portapapeles! ✓</span>
+                    <button id="btnCopyCierreSummary" class="btn btn-sm btn-outline" style="gap: 6px; font-weight: 600;">
+                      <span>📋</span>
+                      <span>Copiar Resumen</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div style="padding: 16px;">
+                  <div id="cierreDocsListContainer" style="display: none; margin-bottom: 12px; font-size: 12px; color: #64748b; background: #f8fafc; padding: 10px 14px; border-radius: 6px; border: 1px solid #e2e8f0;">
+                    <strong style="color: #334155;">📄 Documentos / Transcripciones detectados en Drive:</strong>
+                    <ul id="cierreDocsList" style="margin: 6px 0 0 16px; padding: 0;"></ul>
+                  </div>
+
+                  <textarea id="cierreSummaryTextarea" class="form-input" rows="14" style="width: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; line-height: 1.6; border: 1px solid #cbd5e1; border-radius: 8px; padding: 14px; resize: vertical;" placeholder="Haz clic en '🤖 Generar Resumen IA' para que Gemini analice todas las transcripciones de las grabaciones de la carpeta del cliente y genere el resumen estructurado en 3 secciones..."></textarea>
+                </div>
+              </div>
+
+              <!-- Vista Previa del Correo de Cierre (Paso 1) -->
+              <div class="welcome-email-section" style="margin-top: 16px;">
+                <div class="email-section-header">
+                  <div class="email-section-title">
+                    <span>🏁</span>
+                    <span>Vista Previa: Correo de Cierre de Implementación</span>
+                    <span class="badge badge-success" style="font-size: 11px; padding: 3px 8px; font-weight: 600;">Plantilla Oficial</span>
+                  </div>
+                </div>
+
+                <div style="padding: 16px; border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
+                  <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
+                    <strong style="font-size: 12px; color: #475569; width: 60px;">Para:</strong>
+                    <input type="text" id="cierreRecipientPreview" class="form-input" style="flex: 1; font-size: 12px; padding: 4px 8px; background: #ffffff;" placeholder="correo@cliente.cl">
+                  </div>
+                  <div style="display: flex; gap: 8px; align-items: center;">
+                    <strong style="font-size: 12px; color: #475569; width: 60px;">Asunto:</strong>
+                    <input type="text" id="cierreSubjectPreview" class="form-input" style="flex: 1; font-size: 12px; padding: 4px 8px; background: #ffffff;" placeholder="Asunto del correo...">
+                  </div>
+                </div>
+
+                <div id="cierreEmailPreviewContainer" style="padding: 20px; background: #ffffff; min-height: 200px;">
+                  <p style="color: #94a3b8; font-style: italic; text-align: center; margin: 40px 0;">Selecciona un cliente para visualizar el correo personalizado.</p>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </section>
+
+        <!-- VISTA: PLANTILLAS DE CORREO CORPORATIVAS -->
+        <section id="viewTemplates" class="app-view">
+          <!-- Barra Superior de Estado y Conexión -->
+          <div class="templates-top-status-bar">
+            <div class="status-bar-left">
+              <div class="firebase-badge" id="fbStatusBadge">
+                <span class="status-indicator"></span>
+                <span class="status-label">Cargando estado...</span>
+              </div>
+            </div>
+            <div class="status-bar-right">
+              <button type="button" class="btn-tool-secondary" id="btnOpenCategoryManager">
+                <span>🏷️ Administrar Etiquetas</span>
+              </button>
+              <button type="button" class="btn-tool-secondary" id="btnOpenVarManager">
+                <span>🧩 Variables & Monday</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Contenedor Principal (2 Columnas: Lista de Plantillas y Editor) -->
+          <div class="templates-layout">
+            <!-- Columna Izquierda: Lista y Filtros -->
+            <aside class="templates-sidebar">
+              <div class="templates-sidebar-header">
+                <button type="button" class="btn-create-template" id="btnNewTemplate">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  <span>Crear Nueva Plantilla</span>
+                </button>
+
+                <div class="templates-search-box">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  <input type="text" id="dashSearchInput" placeholder="Buscar por título, asunto o contenido...">
+                </div>
+                
+                <div class="category-header-row">
+                  <span class="category-title-label">Etiquetas</span>
+                  <button type="button" class="btn-text-action" id="btnSidebarManageCategories" title="Crear, editar o borrar etiquetas">⚙️ Administrar</button>
+                </div>
+                <div class="category-filters-container" id="dashCategoryFilters">
+                  <!-- Chips de Categoría -->
+                </div>
+              </div>
+
+              <div class="templates-scroll-list" id="dashTemplatesList">
+                <!-- Lista de Tarjetas de Plantilla -->
+              </div>
+
+              <div class="templates-sidebar-footer">
+                <span id="templateCountLabel">0 plantillas</span>
+                <button type="button" class="btn-text-action" id="btnRefreshList">🔄 Recargar</button>
+              </div>
+            </aside>
+
+            <!-- Columna Derecha: Editor y Simulador -->
+            <main class="templates-editor-panel">
+              <div class="templates-editor-top-bar">
+                <div class="editor-mode-tabs">
+                  <button type="button" class="mode-tab-btn active" data-view="editor">✍️ Editor de Plantilla</button>
+                  <button type="button" class="mode-tab-btn" data-view="preview">👁️ Vista Previa en Vivo (Simulador Gmail)</button>
+                </div>
+
+                <div class="editor-header-actions">
+                  <button type="button" class="action-btn-danger" id="btnDeleteCurrentTemplate" style="display: none;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                    Eliminar
+                  </button>
+                  <button type="button" class="action-btn-secondary" id="btnDuplicateCurrentTemplate" style="display: none;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                    Duplicar
+                  </button>
+                  <button type="button" class="btn-save-main" id="btnSaveTemplate">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                    <span id="saveBtnLabel">Guardar Plantilla</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Vista 1: Editor Form -->
+              <div class="view-container" id="editorView">
+                <form id="fullEditorForm" class="full-editor-form" onsubmit="return false;">
+                  <div class="meta-inputs-grid">
+                    <input type="hidden" id="fullTemplateId">
+                    
+                    <div class="meta-field flex-2">
+                      <label for="fullTemplateTitle">Título / Nombre de la Plantilla *</label>
+                      <input type="text" id="fullTemplateTitle" class="form-input" required placeholder="Ej: Cotización de Servicios 2026">
+                    </div>
+
+                    <div class="meta-field flex-1">
+                      <div class="field-label-row">
+                        <label for="fullTemplateCategory">Categoría / Etiqueta</label>
+                        <button type="button" class="btn-text-action" id="btnQuickManageCategories" title="Crear o borrar etiquetas">🏷️ Administrar</button>
+                      </div>
+                      <input type="text" id="fullTemplateCategory" class="form-input" placeholder="Ej: Comercial, Ventas, Soporte" list="dashCategoriesList">
+                      <datalist id="dashCategoriesList">
+                        <option value="Comercial">
+                        <option value="Ventas">
+                        <option value="Soporte">
+                        <option value="Operaciones">
+                        <option value="Bienvenida">
+                        <option value="General">
+                      </datalist>
+                    </div>
+                  </div>
+
+                  <div class="meta-field subject-field-group">
+                    <div class="field-label-row">
+                      <label for="fullTemplateSubject">Asunto del Correo Electrónico *</label>
+                      <span class="field-hint">💡 Puedes usar variables como <code>{{empresa}}</code>, <code>{{nombre_cliente}}</code>, <code>{{mi_nombre}}</code>, etc.</span>
+                    </div>
+                    <div class="subject-input-wrapper">
+                      <input type="text" id="fullTemplateSubject" class="form-input" required placeholder="Ej: Propuesta Comercial - {{empresa}} (Atención {{nombre_cliente}})">
+                    </div>
+                  </div>
+
+                  <!-- Banners Específicos para esta Plantilla (Header & Footer) -->
+                  <div class="template-banners-box">
+                    <div class="template-banners-header">
+                      <div class="template-banners-title">
+                        <span>🖼️</span>
+                        <strong>Banners de esta Plantilla (Header & Footer)</strong>
+                        <span class="template-banners-badge">Por Plantilla</span>
+                      </div>
+                      <span class="template-banners-subtext">Personaliza o sube imágenes de Drive exclusivas para este tipo de correo.</span>
+                    </div>
+
+                    <div class="template-banners-grid">
+                      <!-- Banner Superior (Header) -->
+                      <div class="tpl-banner-card">
+                        <div class="tpl-banner-card-head">
+                          <label for="tplHeaderAssetInput">Banner Superior (Header)</label>
+                          <span id="tplHeaderUploadStatus" class="tpl-upload-status"></span>
+                        </div>
+                        <div class="tpl-banner-preview-box">
+                          <img id="tplHeaderPreviewImg" src="" alt="Header" class="tpl-banner-preview-img" style="display: none;" />
+                          <span id="tplHeaderEmptyTxt" class="tpl-banner-empty-text">Sin banner superior propio</span>
+                        </div>
+                        <div class="tpl-banner-input-group">
+                          <input type="text" id="tplHeaderAssetInput" class="form-input tpl-banner-input" placeholder="ID o enlace de Drive">
+                          <input type="file" id="tplHeaderFileInput" accept="image/*" style="display: none;">
+                          <button type="button" id="btnTplUploadHeader" class="btn-tool-secondary tpl-btn-upload" title="Subir imagen a Google Drive">
+                            <span>📤 Subir</span>
+                          </button>
+                          <button type="button" id="btnTplClearHeader" class="btn-text-action tpl-btn-clear" title="Quitar banner de esta plantilla">
+                            ✕
+                          </button>
+                        </div>
+                      </div>
+
+                      <!-- Banner Inferior (Footer) -->
+                      <div class="tpl-banner-card">
+                        <div class="tpl-banner-card-head">
+                          <label for="tplFooterAssetInput">Banner Inferior (Footer)</label>
+                          <span id="tplFooterUploadStatus" class="tpl-upload-status"></span>
+                        </div>
+                        <div class="tpl-banner-preview-box">
+                          <img id="tplFooterPreviewImg" src="" alt="Footer" class="tpl-banner-preview-img" style="display: none;" />
+                          <span id="tplFooterEmptyTxt" class="tpl-banner-empty-text">Sin banner inferior propio</span>
+                        </div>
+                        <div class="tpl-banner-input-group">
+                          <input type="text" id="tplFooterAssetInput" class="form-input tpl-banner-input" placeholder="ID o enlace de Drive">
+                          <input type="file" id="tplFooterFileInput" accept="image/*" style="display: none;">
+                          <button type="button" id="btnTplUploadFooter" class="btn-tool-secondary tpl-btn-upload" title="Subir imagen a Google Drive">
+                            <span>📤 Subir</span>
+                          </button>
+                          <button type="button" id="btnTplClearFooter" class="btn-text-action tpl-btn-clear" title="Quitar banner de esta plantilla">
+                            ✕
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Barra de herramientas Enriquecida Completa -->
+                  <div class="full-wysiwyg-wrapper">
+                    <!-- Barra de acciones rápidas de Norma & Alternador de Editor -->
+                    <div class="norma-editor-actions-bar friday-editor-actions-bar" style="display: flex; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap;">
+                      <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                        <button type="button" class="tb-btn tb-btn-drive" id="btnDashDriveLink" title="Vincular texto seleccionado o insertar link a la Carpeta Drive / Grabaciones del Cliente" style="color: #059669; font-weight: 600; border-color: #a7f3d0; background: #ecfdf5; padding: 5px 11px; border-radius: 6px; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;">
+                          📁 Link Carpeta Drive
+                        </button>
+                        <button type="button" class="tb-btn tb-btn-cta" id="btnDashCtaButton" title="Crear Botón Interactivo / Call to Action" style="color: #2563eb; font-weight: 600; border-color: #bfdbfe; background: #eff6ff; padding: 5px 11px; border-radius: 6px; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;">
+                          🔘 Crear Botón Buk
+                        </button>
+                      </div>
+                      <button type="button" class="btn-toggle-editor" id="btnToggleEditorMode" title="Alternar entre SunEditor y el editor clásico" style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 5px 12px; font-size: 12px; font-weight: 600; color: #475569; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: all 0.15s ease;">
+                        <span id="toggleEditorModeIcon">🔄</span>
+                        <span id="toggleEditorModeText">Volver a Editor Clásico</span>
+                      </button>
+                    </div>
+
+                    <!-- Barra de herramientas Clásica (Legacy) -->
+                    <div class="full-toolbar" id="legacyFullToolbar" style="display: none;">
+                      <div class="tb-group">
+                        <button type="button" class="tb-btn" data-cmd="bold" title="Negrita (Ctrl+B)"><b>B</b></button>
+                        <button type="button" class="tb-btn" data-cmd="italic" title="Cursiva (Ctrl+I)"><i>I</i></button>
+                        <button type="button" class="tb-btn" data-cmd="underline" title="Subrayado (Ctrl+U)"><u>U</u></button>
+                        <button type="button" class="tb-btn" data-cmd="strikeThrough" title="Tachado"><s>S</s></button>
+                      </div>
+
+                      <div class="tb-group">
+                        <button type="button" class="tb-btn" data-cmd="formatBlock" data-val="h2">H2</button>
+                        <button type="button" class="tb-btn" data-cmd="formatBlock" data-val="h3">H3</button>
+                        <button type="button" class="tb-btn" data-cmd="formatBlock" data-val="p">P</button>
+                      </div>
+
+                      <div class="tb-group">
+                        <button type="button" class="tb-btn" data-cmd="insertUnorderedList" title="Lista de viñetas">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                        </button>
+                        <button type="button" class="tb-btn" data-cmd="insertOrderedList" title="Lista numerada">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg>
+                        </button>
+                      </div>
+
+                      <div class="tb-group">
+                        <button type="button" class="tb-btn" data-cmd="justifyLeft" title="Alinear a la izquierda">⬅️</button>
+                        <button type="button" class="tb-btn" data-cmd="justifyCenter" title="Centrar">↔️</button>
+                        <button type="button" class="tb-btn" data-cmd="justifyRight" title="Alinear a la derecha">➡️</button>
+                      </div>
+
+                      <div class="tb-group">
+                        <button type="button" class="tb-btn" id="btnDashLink" title="Insertar Hipervínculo">🔗 Enlace</button>
+                        <button type="button" class="tb-btn" id="btnDashImage" title="Insertar Imagen">🖼️ Imagen</button>
+                        <input type="file" id="dashImageUpload" accept="image/*" style="display: none;">
+                      </div>
+                    </div>
+
+                    <!-- Barra de inserción de variables -->
+                    <div class="full-variables-bar">
+                      <span class="vars-title">Variables Dinámicas:</span>
+                      <div class="vars-chips-wrapper" id="dashDynamicVarsWrapper">
+                        <!-- Generado dinámicamente -->
+                      </div>
+                      <button type="button" class="dash-var-chip custom-add" id="btnDashManageVars" title="Ver variables y a qué columna de Monday corresponden">
+                        ⚙️ Gestionar Variables & Columnas
+                      </button>
+                    </div>
+
+                    <!-- Lienzo SunEditor -->
+                    <textarea id="fullWysiwygEditor" style="display: none;"></textarea>
+
+                    <!-- Lienzo Clásico (Fallback / Toggle) -->
+                    <div id="legacyWysiwygEditor" class="full-editor-canvas" contenteditable="true" spellcheck="true" style="display: none;"></div>
+                  </div>
+                </form>
+              </div>
+
+              <!-- Vista 2: Simulador Gmail (Preview) -->
+              <div class="view-container" id="previewView" style="display: none;">
+                <div class="gmail-simulator">
+                  <div class="sim-header">
+                    <span class="sim-dot red"></span>
+                    <span class="sim-dot yellow"></span>
+                    <span class="sim-dot green"></span>
+                    <span class="sim-title">Simulador de Correo en Gmail</span>
+                  </div>
+                  <div class="sim-body">
+                    <div class="sim-field">
+                      <span class="sim-label">Para:</span>
+                      <span class="sim-value">cliente.ejemplo@empresa.com</span>
+                    </div>
+                    <div class="sim-field">
+                      <span class="sim-label">Asunto:</span>
+                      <span class="sim-value" id="simSubjectDisplay"></span>
+                    </div>
+                    <hr class="sim-divider">
+                    <div class="sim-content" id="simBodyDisplay"></div>
+                  </div>
+                </div>
+              </div>
+            </main>
+          </div>
+        </section>
+
+        <!-- VISTA 4: CONFIGURACIÓN -->
+        <section id="viewSettings" class="app-view">
+          <div class="tool-card">
+            <!-- CABECERA DE CONFIGURACIÓN CON BOTÓN MAESTRO DE BLOQUEO/DESBLOQUEO -->
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border);">
+              <div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #0f172a;">⚙️ Configuración y Credenciales</h3>
+                  <span id="globalLockStatusBadge" style="font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 12px; background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; display: inline-flex; align-items: center; gap: 4px;">
+                    🔒 Bloqueado
+                  </span>
+                </div>
+                <p style="margin: 4px 0 0 0; color: #64748b; font-size: 13px;">Todas las credenciales y rutas están protegidas para evitar cambios accidentales.</p>
+              </div>
+              <button type="button" id="btnToggleGlobalLock" class="btn-tool-secondary" style="font-size: 13px; font-weight: 600; padding: 8px 16px; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; border-radius: 8px;">
+                <span id="globalLockIcon">🔓</span>
+                <span id="globalLockText">Desbloquear para editar</span>
+              </button>
+            </div>
+
+            <!-- BLOQUE 1: CONEXIONES PRINCIPALES & INTELIGENCIA ARTIFICIAL -->
+            <div style="background: #ffffff; border: 1px solid var(--border); border-radius: 10px; padding: 18px; margin-bottom: 20px;">
+              <div style="margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #f1f5f9;">
+                <h4 style="font-size: 13.5px; font-weight: 700; color: #1e293b; margin: 0;">🔌 Conexiones Principales & Inteligencia Artificial</h4>
+                <p style="font-size: 12px; color: #64748b; margin: 4px 0 0 0;">Credenciales globales compartidas por todo el equipo para Google Apps Script, Monday.com e IA.</p>
+              </div>
+
+              <div class="form-group">
+                <label for="inputGasUrl">URL Web App de Google Apps Script</label>
+                <input type="url" id="inputGasUrl" class="form-input" placeholder="https://script.google.com/macros/s/.../exec" disabled>
+                <div class="form-help">Pega la URL del despliegue de tu Web App en Google Apps Script.</div>
+              </div>
+
+              <div class="form-group">
+                <label for="inputMondayApiKey">API Key Personal de Monday.com</label>
+                <input type="password" id="inputMondayApiKey" class="form-input" placeholder="eyJhbGciOiJIUzI1NiJ9..." disabled>
+                <div class="form-help">Token de API personal de Monday.</div>
+              </div>
+
+              <div class="form-group">
+                <label for="inputBoardId">ID del Tablero Master de Clientes</label>
+                <input type="text" id="inputBoardId" class="form-input" value="1400120846" disabled>
+                <div class="form-help">Tablero: Master de Clientes Asistencia - Chile.</div>
+              </div>
+
+              <div class="form-group">
+                <label for="inputGeminiApiKey">Gemini API Key (Google AI Studio)</label>
+                <input type="password" id="inputGeminiApiKey" class="form-input" placeholder="AIzaSy..." disabled>
+                <div class="form-help">💡 Tu clave personal de Google AI Studio para activar el Consultor de Monday y redacción de minutas con IA.</div>
+              </div>
+
+              <div class="form-group" style="margin-bottom: 0;">
+                <label for="selectGeminiModel">Modelo de Inteligencia Artificial</label>
+                <select id="selectGeminiModel" class="form-input" disabled>
+                  <option value="gemini-3.7-flash" selected>⚡ Gemini 3.7 Flash (Recomendado - Razonamiento Profundo & Precisión)</option>
+                  <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                  <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                  <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+                </select>
+                <div class="form-help">Selecciona el motor de Gemini. Norma cuenta con autocascada de contingencia.</div>
+              </div>
+            </div>
+
+            <!-- BLOQUE 2: RUTAS DE GOOGLE DRIVE -->
+            <div style="background: #ffffff; border: 1px solid var(--border); border-radius: 10px; padding: 18px; margin-bottom: 20px;">
+              <div style="margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #f1f5f9;">
+                <h4 style="font-size: 13.5px; font-weight: 700; color: #1e293b; margin: 0;">📁 Rutas de Google Drive</h4>
+                <p style="font-size: 12px; color: #64748b; margin: 4px 0 0 0;">Carpetas de Drive compartidas para gestionar la documentación y grabaciones de clientes.</p>
+              </div>
+
+              <div class="form-group">
+                <label for="inputRootDriveFolder">Carpeta Raíz de Clientes en Google Drive (URL o ID)</label>
+                <input type="text" id="inputRootDriveFolder" class="form-input" value="https://drive.google.com/drive/folders/12tym4HlpvxjiyVZEMt-q59f3H7V3uqea?usp=sharing" disabled>
+                <div class="form-help">Carpeta donde están o se crearán las subcarpetas de cada cliente.</div>
+              </div>
+
+              <div class="form-group">
+                <label for="inputMeetRecordingsFolder">Carpetas de Grabaciones de Google Meet (URLs o IDs)</label>
+                <textarea id="inputMeetRecordingsFolder" class="form-input" style="height: 72px; resize: vertical; font-family: monospace; font-size: 12px; line-height: 1.4;" placeholder="https://drive.google.com/drive/folders/...\nhttps://drive.google.com/drive/folders/..." disabled></textarea>
+                <div class="form-help">💡 Puedes ingresar <strong>2 o más carpetas de grabaciones</strong> (separadas por salto de línea o coma). Norma escaneará y unificará los videos de todas ellas automáticamente.</div>
+              </div>
+
+              <div class="form-group" style="margin-bottom: 0;">
+                <label for="inputSlidesKickoffTemplate">Plantilla Maestra de Google Slides para Kick Off (URL o ID)</label>
+                <input type="text" id="inputSlidesKickoffTemplate" class="form-input" placeholder="https://docs.google.com/presentation/d/.../edit o ID" disabled>
+                <div class="form-help">📊 Presentación estándar de Kick Off. En el Onboarding se creará una copia en la carpeta del cliente y se rellenará automáticamente la diapositiva "Alcance del proyecto".</div>
+              </div>
+            </div>
+
+            <!-- BLOQUE 3: PLANTILLAS DE CORREO & SINCRONIZACIÓN FIREBASE -->
+            <div style="background: #ffffff; border: 1px solid var(--border); border-radius: 10px; padding: 18px; margin-bottom: 20px;">
+              <div style="margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #f1f5f9;">
+                <h4 style="font-size: 13.5px; font-weight: 700; color: #1e293b; margin: 0;">✉️ Plantillas de Correo & Sincronización Firebase</h4>
+                <p style="font-size: 12px; color: #64748b; margin: 4px 0 0 0;">Configuración de Firebase Firestore para compartir y sincronizar plantillas entre todo el equipo vía la nube.</p>
+              </div>
+
+              <div class="form-group">
+                <label for="dashCfgProjectId">Firebase Project ID</label>
+                <input type="text" id="dashCfgProjectId" class="form-input" placeholder="ej: buk-pm-asistencia" disabled>
+                <div class="form-help">ID del proyecto de Firebase Firestore donde se alojan las plantillas.</div>
+              </div>
+
+              <div class="form-group">
+                <label for="dashCfgApiKey">Firebase Web API Key</label>
+                <input type="password" id="dashCfgApiKey" class="form-input" placeholder="AIzaSy..." disabled>
+                <div class="form-help">Clave de API pública de Firebase para operaciones de lectura/escritura.</div>
+              </div>
+
+              <div class="form-group">
+                <label for="dashCfgCurrentUser">Tu Correo Electrónico</label>
+                <input type="email" id="dashCfgCurrentUser" class="form-input" placeholder="tu.correo@empresa.com" disabled>
+                <div class="form-help">Tu email corporativo para registrar la autoría en plantillas y variables.</div>
+              </div>
+
+              <div class="form-group" style="margin-bottom: 0;">
+                <label for="dashCfgSenderName">Tu Nombre Completo (Remitente)</label>
+                <input type="text" id="dashCfgSenderName" class="form-input" placeholder="Tu Nombre Completo" disabled>
+                <div class="form-help">Nombre a utilizar en la variable <code>{{mi_nombre}}</code> al redactar en Gmail.</div>
+              </div>
+            </div>
+
+            <div style="margin-top: 24px;">
+              <button id="btnSaveSettings" class="btn-primary">
+                <span>💾 Guardar Configuración</span>
+              </button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- MODAL: GESTOR DE VARIABLES DINÁMICAS Y COLUMNAS DE MONDAY -->
+  <div class="modal-backdrop" id="variablesModal" style="display: none;">
+    <div class="settings-modal-dialog" style="max-width: 680px; width: 680px;">
+      <div class="modal-dialog-header">
+        <h2>🏷️ Variables Dinámicas & Columnas de Monday.com</h2>
+        <button class="modal-btn-close" id="btnCloseVariablesModal">&times;</button>
+      </div>
+
+      <div class="modal-dialog-body">
+        <div class="info-callout" style="background-color: #f0fdf4; border-left: 4px solid #10b981; color: #166534; font-size: 12px; margin-bottom: 12px; padding: 10px 14px; border-radius: 6px;">
+          Aquí puedes ver las variables disponibles, a qué columna de Monday (<strong>Tablero 1400120846</strong>) corresponden, y crear o eliminar variables para adaptarlas a tus plantillas.
+        </div>
+
+        <!-- Formulario para agregar / editar variable -->
+        <div class="var-form-box" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; margin-bottom: 16px;">
+          <h3 style="font-size: 13px; margin: 0 0 10px 0; color: #0f172a;" id="varFormTitle">✨ Crear Nueva Variable Dinámica</h3>
+          <input type="hidden" id="varEditId" value="">
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 10px;">
+            <div class="form-control-group" style="margin-bottom: 0;">
+              <label for="varInputKey" style="display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 4px;">Nombre / Clave de la Variable *</label>
+              <input type="text" id="varInputKey" placeholder="ej: responsable_proyecto" required style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; box-sizing: border-box;">
+              <small style="color: #64748b; font-size: 11px;">En la plantilla se escribirá como <code>{{nombre}}</code></small>
+            </div>
+            <div class="form-control-group" style="margin-bottom: 0;">
+              <label for="varInputLabel" style="display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 4px;">Etiqueta Descriptiva</label>
+              <input type="text" id="varInputLabel" placeholder="ej: Responsable del Proyecto" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; box-sizing: border-box;">
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 10px;">
+            <div class="form-control-group" style="margin-bottom: 0;">
+              <label for="varSourceSelect" style="display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 4px;">Origen de la Información *</label>
+              <select id="varSourceSelect" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; outline: none; background: #fff; box-sizing: border-box;">
+                <option value="monday">📊 Columna de Monday.com (Tablero 1400120846)</option>
+                <option value="system_date">📅 Fecha Actual del Sistema</option>
+                <option value="system_user">👤 Nombre del Remitente</option>
+                <option value="manual">✍️ Relleno Manual en Gmail</option>
+              </select>
+            </div>
+            <div class="form-control-group" id="varMondayColumnGroup" style="margin-bottom: 0;">
+              <label for="varMondayColumnSelect" style="display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 4px;">Columna del Tablero (1400120846) *</label>
+              <select id="varMondayColumnSelect" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; outline: none; background: #fff; box-sizing: border-box;">
+                <option value="">-- Selecciona una columna --</option>
+              </select>
+              <input type="text" id="varCustomColumnInput" placeholder="O escribe el nombre de la columna..." style="margin-top: 4px; display: none; width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; box-sizing: border-box;">
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px;">
+            <button type="button" class="btn btn-sm btn-outline" id="btnCancelVarEdit" style="display: none;">Cancelar Edición</button>
+            <button type="button" class="btn btn-sm btn-primary" id="btnSaveVarItem">+ Guardar Variable</button>
+          </div>
+        </div>
+
+        <!-- Lista de variables existentes -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <h3 style="font-size: 13px; color: #0f172a; margin: 0;">📋 Variables Activas</h3>
+          <span id="varCountBadge" style="font-size: 11px; background: #e2e8f0; color: #475569; padding: 2px 8px; border-radius: 12px;">0 variables</span>
+        </div>
+        
+        <div class="var-table-container" style="max-height: 220px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 6px;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 12px;" id="varManagerTable">
+            <thead>
+              <tr style="background: #f1f5f9; text-align: left; border-bottom: 1px solid #e2e8f0;">
+                <th style="padding: 8px 12px;">Variable</th>
+                <th style="padding: 8px 12px;">Etiqueta</th>
+                <th style="padding: 8px 12px;">Origen / Columna Monday</th>
+                <th style="padding: 8px 12px; text-align: right;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="varTableBody">
+              <!-- Filas dinámicas -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="modal-dialog-footer" style="margin-top: 14px; padding-top: 10px; display: flex; justify-content: flex-end;">
+          <button type="button" class="btn btn-sm btn-primary" id="btnCloseVariablesFooter">Listo</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: GESTOR DE CATEGORÍAS Y ETIQUETAS -->
+  <div class="modal-backdrop" id="categoriesModal" style="display: none;">
+    <div class="settings-modal-dialog" style="max-width: 680px; width: 680px; background-color: #ffffff;">
+      <div class="modal-dialog-header" style="background-color: #ffffff;">
+        <div>
+          <h2 style="margin: 0; font-size: 16px; font-weight: 700; color: #0f172a;">🏷️ Administración de Categorías y Etiquetas</h2>
+          <p style="margin: 2px 0 0 0; font-size: 12px; color: #64748b;">Crea, renombra o elimina las etiquetas con las que organizas tus plantillas.</p>
+        </div>
+        <button class="modal-btn-close" id="btnCloseCategoriesModal">&times;</button>
+      </div>
+
+      <div class="modal-dialog-body" style="background-color: #ffffff;">
+        <!-- Formulario Crear/Editar Etiqueta -->
+        <div class="category-create-box" style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 14px; margin-bottom: 14px;">
+          <h4 id="categoryFormTitle" style="margin: 0 0 8px 0; font-size: 13px; font-weight: 700; color: #0f172a;">✨ Crear Nueva Etiqueta</h4>
+          <input type="hidden" id="categoryEditOldName">
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="categoryInputName" placeholder="Nombre de la etiqueta (ej: Cobranza, Onboarding, Operaciones...)" style="flex: 1; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; outline: none; background: #ffffff; color: #0f172a; box-sizing: border-box;">
+            <button type="button" class="btn btn-sm btn-primary" id="btnSaveCategoryItem" style="white-space: nowrap;">+ Guardar Etiqueta</button>
+            <button type="button" class="btn btn-sm btn-outline" id="btnCancelCategoryEdit" style="display: none;">Cancelar</button>
+          </div>
+        </div>
+
+        <!-- Listado de Etiquetas Existentes -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span style="font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase;">Etiquetas Registradas</span>
+          <span id="categoryCountBadge" style="font-size: 11px; background: #e0e7ff; color: #4338ca; padding: 2px 8px; border-radius: 12px; font-weight: 600;">0 etiquetas</span>
+        </div>
+
+        <div class="categories-table-container" style="max-height: 260px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; background: #ffffff;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 13px; background: #ffffff;" id="categoriesTable">
+            <thead style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 2;">
+              <tr>
+                <th style="text-align: left; padding: 10px 14px; font-weight: 600; color: #475569; background: #f8fafc;">Nombre de la Etiqueta</th>
+                <th style="text-align: center; padding: 10px 14px; font-weight: 600; color: #475569; background: #f8fafc;">Plantillas</th>
+                <th style="text-align: right; padding: 10px 14px; font-weight: 600; color: #475569; background: #f8fafc;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="categoriesTableBody" style="background: #ffffff;">
+              <!-- Filas dinámicas -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="modal-dialog-footer" style="margin-top: 14px; padding-top: 10px; border-top: 1px solid #f1f5f9; display: flex; justify-content: flex-end;">
+          <button type="button" class="btn btn-sm btn-primary" id="btnCloseCategoriesFooter">Listo</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: GENERADOR DE BOTONES INTERACTIVOS (CTA) -->
+  <div class="modal-backdrop" id="ctaButtonModal" style="display: none;">
+    <div class="settings-modal-dialog" style="max-width: 580px; width: 580px; background-color: #ffffff;">
+      <div class="modal-dialog-header" style="background-color: #ffffff;">
+        <div>
+          <h2 style="margin: 0; font-size: 16px; font-weight: 700; color: #0f172a;">🔘 Crear Botón de Acción (CTA)</h2>
+          <p style="margin: 2px 0 0 0; font-size: 12px; color: #64748b;">Crea botones llamativos para agendar reuniones, enlaces o llamados a la acción.</p>
+        </div>
+        <button class="modal-btn-close" id="btnCloseCtaModal">&times;</button>
+      </div>
+
+      <div class="modal-dialog-body" style="background-color: #ffffff; display: flex; flex-direction: column; gap: 14px;">
+        <!-- Texto del Botón -->
+        <div class="form-control-group">
+          <label for="ctaInputText" style="display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 4px;">Texto del Botón *</label>
+          <input type="text" id="ctaInputText" placeholder="Ej: Haz clic aquí para agendar tu primera sesión" value="Haz clic aquí para agendar tu primera sesión" required style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; box-sizing: border-box;">
+        </div>
+
+        <!-- Enlace / URL -->
+        <div class="form-control-group">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <label for="ctaInputUrl" style="font-size: 12px; font-weight: 600; color: #475569;">Enlace / URL de Destino *</label>
+            <button type="button" id="btnCtaPresetDrive" style="font-size: 11px; background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; border-radius: 4px; padding: 2px 8px; cursor: pointer; font-weight: 600;" title="Configurar como enlace a Carpeta Drive del Cliente">
+              📁 Usar Carpeta Drive ({{link_carpeta}})
+            </button>
+          </div>
+          <input type="text" id="ctaInputUrl" placeholder="Ej: https://calendly.com/... o {{link_carpeta}}" value="https://" required style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; box-sizing: border-box;">
+        </div>
+
+        <!-- Configuración de Colores y Forma -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+          <!-- Color de Fondo -->
+          <div class="form-control-group">
+            <label style="display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 4px;">Color del Botón</label>
+            <div style="display: flex; gap: 6px; align-items: center; margin-top: 4px;">
+              <button type="button" class="cta-color-preset active" data-color="#2563eb" style="width: 28px; height: 28px; border-radius: 6px; background: #2563eb; border: 2px solid #0f172a; cursor: pointer;" title="Azul Buk"></button>
+              <button type="button" class="cta-color-preset" data-color="#0052cc" style="width: 28px; height: 28px; border-radius: 6px; background: #0052cc; border: 1px solid #cbd5e1; cursor: pointer;" title="Azul Marino"></button>
+              <button type="button" class="cta-color-preset" data-color="#16a34a" style="width: 28px; height: 28px; border-radius: 6px; background: #16a34a; border: 1px solid #cbd5e1; cursor: pointer;" title="Verde"></button>
+              <button type="button" class="cta-color-preset" data-color="#7c3aed" style="width: 28px; height: 28px; border-radius: 6px; background: #7c3aed; border: 1px solid #cbd5e1; cursor: pointer;" title="Morado"></button>
+              <button type="button" class="cta-color-preset" data-color="#ea580c" style="width: 28px; height: 28px; border-radius: 6px; background: #ea580c; border: 1px solid #cbd5e1; cursor: pointer;" title="Naranja"></button>
+              <input type="color" id="ctaCustomBgColor" value="#2563eb" style="width: 30px; height: 30px; border: 1px solid #cbd5e1; padding: 0; cursor: pointer; border-radius: 6px; background: transparent;" title="Color Personalizado">
+            </div>
+          </div>
+
+          <!-- Forma / Redondez -->
+          <div class="form-control-group">
+            <label for="ctaRadiusSelect" style="display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 4px;">Bordes / Forma</label>
+            <select id="ctaRadiusSelect" style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; background: #fff; outline: none; box-sizing: border-box;">
+              <option value="8px">🔘 Bordes redondeados (8px)</option>
+              <option value="25px">💊 Estilo Píldora (25px)</option>
+              <option value="4px">⬛ Rectángulo suave (4px)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Alineación y Color de Texto -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+          <div class="form-control-group">
+            <label for="ctaAlignSelect" style="display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 4px;">Alineación en el Correo</label>
+            <select id="ctaAlignSelect" style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; background: #fff; outline: none; box-sizing: border-box;">
+              <option value="center">↔️ Centrado</option>
+              <option value="left">⬅️ Alinear a la Izquierda</option>
+              <option value="right">➡️ Alinear a la Derecha</option>
+            </select>
+          </div>
+
+          <div class="form-control-group">
+            <label for="ctaTextColorSelect" style="display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 4px;">Color del Texto</label>
+            <select id="ctaTextColorSelect" style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; background: #fff; outline: none; box-sizing: border-box;">
+              <option value="#ffffff">⚪ Blanco</option>
+              <option value="#0f172a">⚫ Oscuro / Negro</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Vista Previa en Vivo -->
+        <div style="margin-top: 6px; padding: 14px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px;">
+          <span style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 8px;">Vista Previa en Vivo:</span>
+          <div id="ctaPreviewContainer" style="text-align: center; padding: 12px 0;">
+            <span id="ctaPreviewButton" style="display: inline-block; background-color: #2563eb; color: #ffffff; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px; text-decoration: none; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: all 0.2s;">
+              Haz clic aquí para agendar tu primera sesión
+            </span>
+          </div>
+        </div>
+
+        <div class="modal-dialog-footer" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #f1f5f9; display: flex; justify-content: flex-end; gap: 8px;">
+          <button type="button" class="btn btn-sm btn-outline" id="btnCancelCtaModal">Cancelar</button>
+          <button type="button" class="btn btn-sm btn-primary" id="btnInsertCtaFinal">+ Insertar Botón en la Plantilla</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CONFIRMACIÓN DE ACCIONES (ELIMINACIÓN / ADVERTENCIA) -->
+  <div class="modal-backdrop" id="appConfirmModal" style="display: none; z-index: 100000; position: fixed; inset: 0; background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(2px); align-items: center; justify-content: center;">
+    <div class="settings-modal-dialog" style="max-width: 440px; width: 92%; background-color: #ffffff; border-radius: 12px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.25), 0 10px 10px -5px rgba(0, 0, 0, 0.1); border: 1px solid #e2e8f0; overflow: hidden; animation: popIn 0.15s ease-out;">
+      <div class="modal-dialog-header" style="background-color: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span id="appConfirmIcon" style="font-size: 22px;">🗑️</span>
+          <h2 id="appConfirmTitle" style="margin: 0; font-size: 15px; font-weight: 700; color: #0f172a;">Confirmar eliminación</h2>
+        </div>
+        <button type="button" class="modal-btn-close" id="btnAppConfirmClose" style="background: none; border: none; font-size: 20px; color: #64748b; cursor: pointer; line-height: 1;">&times;</button>
+      </div>
+      <div class="modal-dialog-body" style="background-color: #ffffff; padding: 20px;">
+        <p id="appConfirmMessage" style="margin: 0; font-size: 13.5px; color: #475569; line-height: 1.5; white-space: pre-line;">¿Estás seguro de que deseas realizar esta acción?</p>
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px;">
+          <button type="button" class="btn btn-outline" id="btnAppConfirmCancel" style="padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer; border-radius: 6px; border: 1px solid #cbd5e1; background: #fff; color: #334155;">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="btnAppConfirmAction" style="padding: 8px 18px; font-size: 13px; font-weight: 600; cursor: pointer; border-radius: 6px; background-color: #dc2626; border: 1px solid #dc2626; color: #ffffff; box-shadow: 0 1px 2px rgba(220,38,38,0.2);">Eliminar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toastNotification" class="toast-notification"></div>
+
+  <!-- Scripts -->
+  <script src="libs/suneditor/suneditor.min.js"></script>
+  <script src="libs/suneditor/es.js"></script>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

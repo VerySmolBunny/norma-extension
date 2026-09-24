@@ -1,0 +1,27 @@
+# Environment variables and secrets
+.env
+.env.*
+*.local
+*.pem
+*.key
+
+# OS and IDE files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Logs and runtime
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Node modules (if any tooling added later)
+node_modules/
+
+# Backups and archives
+*.zip
+*.tar.gz
+*.bak
+*.tmp
