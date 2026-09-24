@@ -58,18 +58,37 @@ Extensión de navegador (Manifest V3) diseñada para optimizar los flujos operat
 
 ## ⚙️ Configuración Inicial (Primeros Pasos)
 
-Una vez instalada la extensión, abre el Dashboard o Sidepanel y haz clic en el ícono de **Ajustes (⚙️)**:
+Una vez instalada la extensión, abre el Dashboard o Sidepanel y haz clic en el ícono de **Ajustes (⚙️)** (o pulsa "🔓 Desbloquear" para editar):
 
-1. **Token de API de Monday.com:**
+1. **Tu Nombre en Monday.com (Consultor / COE Asignado):**
+   - Escribe tu nombre tal cual como figura asignado en la columna **"Persona / COE"** en el tablero de Monday.com (ej: `Juan Pérez`).
+   - La extensión usará este dato para filtrar y mostrar **únicamente tus clientes, tus reuniones y tus métricas**.
+
+2. **Token de API de Monday.com:**
    - En Monday.com: Haz clic en tu foto de perfil > *Desarrolladores (Developers)* > *Mi Token de API*.
-   - Pega tu token en el campo correspondiente.
-2. **ID de Tablero de Monday.com:**
-   - Ingresa el ID numérico del tablero de clientes (visible en la URL de Monday).
-3. **API Key de Gemini (Google AI Studio):**
+   - Pega tu token personal en el campo correspondiente.
+
+3. **ID de Tablero de Monday.com:**
+   - Ingresa el ID numérico del tablero Master de Clientes (por defecto viene preconfigurado con el tablero general).
+
+4. **API Key de Gemini (Google AI Studio):**
    - Obtén una clave gratuita en [Google AI Studio](https://aistudio.google.com/).
-   - Pégala en el campo de Gemini para habilitar el asistente conversacional y la generación automática de minutas con IA.
-4. **Google Apps Script Web App (Opcional):**
-   - Si cuentas con el script de automatización para Google Calendar y Drive, ingresa su URL de despliegue Web App.
+   - Pégala para habilitar el asistente conversacional (Norma AI) y la redacción automática de minutas ejecutivas.
+
+5. **Carpetas de Google Drive:**
+   - **Carpeta Raíz de Clientes:** Pega el link o ID de la carpeta en Google Drive donde guardas o gestionas las subcarpetas de tus clientes.
+   - **Carpetas de Grabaciones de Google Meet:** Pega el link o ID de tu carpeta de grabaciones de Meet.
+
+6. **Web App de Google Apps Script (Sincronización de Calendar y Drive):**
+   - Cada consultor debe tener su propia instancia de Apps Script para que Calendar y Drive lean sus propios eventos y archivos:
+     1. Entra a [script.google.com](https://script.google.com) con tu cuenta corporativa de Google.
+     2. Crea un nuevo proyecto y pega el contenido de `google_apps_script/Code.gs`.
+     3. Haz clic en **Implementar** > **Nueva implementación**.
+     4. Selecciona tipo **Aplicación web**:
+        - *Ejecutar como:* **Yo** (tu cuenta).
+        - *Quién tiene acceso:* **Cualquiera** (o cualquiera dentro de la organización).
+     5. Copia la URL terminada en `/exec` y pégala en los Ajustes de la extensión.
+     6. Haz clic en **"🔑 Autorizar Permisos en Google"** en la extensión para conceder permisos a Calendar y Drive en tu cuenta.
 
 ---
 

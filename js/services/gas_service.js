@@ -62,8 +62,9 @@ export class GasService {
    */
   static async fetchMeetings(gasUrl, params = {}) {
     const cleanUrl = normalizeGasUrl(gasUrl);
-    const { dateStr, startTime, endTime, mondayApiKey, boardId, geminiApiKey, geminiModel } = params;
-    const url = `${cleanUrl}${cleanUrl.includes('?') ? '&' : '?'}action=sync_meetings&date=${encodeURIComponent(dateStr || '')}&start_time=${encodeURIComponent(startTime || '00:00')}&end_time=${encodeURIComponent(endTime || '23:59')}&monday_api_key=${encodeURIComponent(mondayApiKey || '')}&board_id=${encodeURIComponent(boardId || '1400120846')}&gemini_api_key=${encodeURIComponent(geminiApiKey || '')}&gemini_model=${encodeURIComponent(geminiModel || 'gemini-3.7-flash')}`;
+    const { dateStr, startTime, endTime, mondayApiKey, boardId, geminiApiKey, geminiModel, coeName } = params;
+    let url = `${cleanUrl}${cleanUrl.includes('?') ? '&' : '?'}action=sync_meetings&date=${encodeURIComponent(dateStr || '')}&start_time=${encodeURIComponent(startTime || '00:00')}&end_time=${encodeURIComponent(endTime || '23:59')}&monday_api_key=${encodeURIComponent(mondayApiKey || '')}&board_id=${encodeURIComponent(boardId || '1400120846')}&gemini_api_key=${encodeURIComponent(geminiApiKey || '')}&gemini_model=${encodeURIComponent(geminiModel || 'gemini-3.7-flash')}`;
+    if (coeName) url += `&coe_name=${encodeURIComponent(coeName)}`;
 
     const res = await fetch(url, {
       method: 'GET',
@@ -78,11 +79,12 @@ export class GasService {
    */
   static async syncFolders(gasUrl, params = {}) {
     const cleanUrl = normalizeGasUrl(gasUrl);
-    const { rootFolderId, mondayApiKey, boardId, startDate, endDate, excludeFinished } = params;
+    const { rootFolderId, mondayApiKey, boardId, startDate, endDate, excludeFinished, coeName } = params;
     let url = `${cleanUrl}${cleanUrl.includes('?') ? '&' : '?'}action=sync_folders&root_folder_id=${encodeURIComponent(rootFolderId)}&monday_api_key=${encodeURIComponent(mondayApiKey || '')}&board_id=${encodeURIComponent(boardId || '1400120846')}`;
     if (startDate) url += `&start_date=${encodeURIComponent(startDate)}`;
     if (endDate) url += `&end_date=${encodeURIComponent(endDate)}`;
     if (excludeFinished) url += `&exclude_finished=true`;
+    if (coeName) url += `&coe_name=${encodeURIComponent(coeName)}`;
 
     const res = await fetch(url);
     return await this._handleResponse(res);
@@ -106,11 +108,12 @@ export class GasService {
    */
   static async createMissingFolders(gasUrl, params = {}) {
     const cleanUrl = normalizeGasUrl(gasUrl);
-    const { rootFolderId, mondayApiKey, boardId, startDate, endDate, excludeFinished } = params;
+    const { rootFolderId, mondayApiKey, boardId, startDate, endDate, excludeFinished, coeName } = params;
     let url = `${cleanUrl}${cleanUrl.includes('?') ? '&' : '?'}action=create_missing_folders&root_folder_id=${encodeURIComponent(rootFolderId)}&monday_api_key=${encodeURIComponent(mondayApiKey || '')}&board_id=${encodeURIComponent(boardId || '1400120846')}`;
     if (startDate) url += `&start_date=${encodeURIComponent(startDate)}`;
     if (endDate) url += `&end_date=${encodeURIComponent(endDate)}`;
     if (excludeFinished) url += `&exclude_finished=true`;
+    if (coeName) url += `&coe_name=${encodeURIComponent(coeName)}`;
 
     const res = await fetch(url);
     return await this._handleResponse(res);
@@ -121,10 +124,11 @@ export class GasService {
    */
   static async scanRecordings(gasUrl, params = {}) {
     const cleanUrl = normalizeGasUrl(gasUrl);
-    const { recordingsFolderIds, rootFolderId, mondayApiKey, boardId, startDate, endDate } = params;
+    const { recordingsFolderIds, rootFolderId, mondayApiKey, boardId, startDate, endDate, coeName } = params;
     let url = `${cleanUrl}${cleanUrl.includes('?') ? '&' : '?'}action=scan_recordings&recordings_folder_id=${encodeURIComponent(recordingsFolderIds)}&root_folder_id=${encodeURIComponent(rootFolderId)}&monday_api_key=${encodeURIComponent(mondayApiKey || '')}&board_id=${encodeURIComponent(boardId || '1400120846')}`;
     if (startDate) url += `&start_date=${encodeURIComponent(startDate)}`;
     if (endDate) url += `&end_date=${encodeURIComponent(endDate)}`;
+    if (coeName) url += `&coe_name=${encodeURIComponent(coeName)}`;
 
     const res = await fetch(url);
     return await this._handleResponse(res);
@@ -145,8 +149,9 @@ export class GasService {
    */
   static async getKOPendingClients(gasUrl, params = {}) {
     const cleanUrl = normalizeGasUrl(gasUrl);
-    const { mondayApiKey, boardId } = params;
-    const url = `${cleanUrl}${cleanUrl.includes('?') ? '&' : '?'}action=get_ko_pending_clients&monday_api_key=${encodeURIComponent(mondayApiKey || '')}&board_id=${encodeURIComponent(boardId || '1400120846')}`;
+    const { mondayApiKey, boardId, coeName } = params;
+    let url = `${cleanUrl}${cleanUrl.includes('?') ? '&' : '?'}action=get_ko_pending_clients&monday_api_key=${encodeURIComponent(mondayApiKey || '')}&board_id=${encodeURIComponent(boardId || '1400120846')}`;
+    if (coeName) url += `&coe_name=${encodeURIComponent(coeName)}`;
     const res = await fetch(url);
     return await this._handleResponse(res);
   }

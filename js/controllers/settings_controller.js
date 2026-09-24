@@ -11,6 +11,7 @@ const ALL_SETTINGS_INPUT_IDS = [
   'inputGasUrl',
   'inputMondayApiKey',
   'inputMondayKey',
+  'inputCoeName',
   'inputBoardId',
   'inputGeminiApiKey',
   'selectGeminiModel',
@@ -218,6 +219,7 @@ export async function loadSavedSettings() {
 
   const inputGasUrl = document.getElementById('inputGasUrl');
   const inputMondayKey = document.getElementById('inputMondayApiKey') || document.getElementById('inputMondayKey');
+  const inputCoeName = document.getElementById('inputCoeName');
   const inputBoardId = document.getElementById('inputBoardId');
   const inputDriveFolderId = document.getElementById('inputRootDriveFolder') || document.getElementById('inputDriveFolderId');
   const inputMeetRecordingsId = document.getElementById('inputMeetRecordingsFolder') || document.getElementById('inputMeetRecordingsId');
@@ -227,6 +229,7 @@ export async function loadSavedSettings() {
 
   if (inputGasUrl) inputGasUrl.value = config.gasUrl || '';
   if (inputMondayKey) inputMondayKey.value = config.mondayApiKey || '';
+  if (inputCoeName) inputCoeName.value = config.coeName || '';
   if (inputBoardId) inputBoardId.value = config.boardId || '';
   if (inputDriveFolderId) inputDriveFolderId.value = config.rootDriveFolderId || '';
   if (inputMeetRecordingsId) inputMeetRecordingsId.value = config.meetRecordingsFolderId || '';
@@ -261,6 +264,7 @@ export async function handleSaveSettings() {
 
   const inputGasUrl = document.getElementById('inputGasUrl');
   const inputMondayKey = document.getElementById('inputMondayApiKey') || document.getElementById('inputMondayKey');
+  const inputCoeName = document.getElementById('inputCoeName');
   const inputBoardId = document.getElementById('inputBoardId');
   const inputDriveFolderId = document.getElementById('inputRootDriveFolder') || document.getElementById('inputDriveFolderId');
   const inputMeetRecordingsId = document.getElementById('inputMeetRecordingsFolder') || document.getElementById('inputMeetRecordingsId');
@@ -272,6 +276,7 @@ export async function handleSaveSettings() {
     ...currentConfig,
     gasUrl: inputGasUrl ? inputGasUrl.value.trim() : (currentConfig.gasUrl || ''),
     mondayApiKey: inputMondayKey ? inputMondayKey.value.trim() : (currentConfig.mondayApiKey || ''),
+    coeName: inputCoeName ? inputCoeName.value.trim() : (currentConfig.coeName || ''),
     boardId: inputBoardId ? inputBoardId.value.trim() : (currentConfig.boardId || ''),
     rootDriveFolderId: inputDriveFolderId ? inputDriveFolderId.value.trim() : (currentConfig.rootDriveFolderId || ''),
     meetRecordingsFolderId: inputMeetRecordingsId ? inputMeetRecordingsId.value.trim() : (currentConfig.meetRecordingsFolderId || ''),
@@ -319,13 +324,34 @@ export async function handleSaveSettings() {
 }
 
 export function updateDriveHeaderLinks(config) {
-  const rootId = extractFolderId(config.rootDriveFolderId || '12tym4HlpvxjiyVZEMt-q59f3H7V3uqea');
-  const recIds = extractFolderIds(config.meetRecordingsFolderId || '1k72An18C2pObM9hbk7JJNXCyPfglCxds');
-  const primaryRecId = recIds.length > 0 ? recIds[0] : '1k72An18C2pObM9hbk7JJNXCyPfglCxds';
+  const rootId = extractFolderId(config.rootDriveFolderId || '');
+  const recIds = extractFolderIds(config.meetRecordingsFolderId || '');
+  const primaryRecId = recIds.length > 0 ? recIds[0] : '';
 
   const linkRootFolder = document.getElementById('linkRootFolder');
   const linkRecordingsFolder = document.getElementById('linkRecordingsFolder');
 
-  if (linkRootFolder) linkRootFolder.href = `https://drive.google.com/drive/folders/${rootId}`;
-  if (linkRecordingsFolder) linkRecordingsFolder.href = `https://drive.google.com/drive/folders/${primaryRecId}`;
+  if (linkRootFolder) {
+    if (rootId) {
+      linkRootFolder.href = `https://drive.google.com/drive/folders/${rootId}`;
+      linkRootFolder.style.pointerEvents = 'auto';
+      linkRootFolder.style.opacity = '1';
+    } else {
+      linkRootFolder.href = '#';
+      linkRootFolder.style.pointerEvents = 'none';
+      linkRootFolder.style.opacity = '0.5';
+    }
+  }
+
+  if (linkRecordingsFolder) {
+    if (primaryRecId) {
+      linkRecordingsFolder.href = `https://drive.google.com/drive/folders/${primaryRecId}`;
+      linkRecordingsFolder.style.pointerEvents = 'auto';
+      linkRecordingsFolder.style.opacity = '1';
+    } else {
+      linkRecordingsFolder.href = '#';
+      linkRecordingsFolder.style.pointerEvents = 'none';
+      linkRecordingsFolder.style.opacity = '0.5';
+    }
+  }
 }

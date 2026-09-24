@@ -195,7 +195,8 @@ export async function handleSyncFolders(state) {
       boardId: config.boardId,
       startDate,
       endDate,
-      excludeFinished
+      excludeFinished,
+      coeName: config.coeName
     });
 
     state.folderSyncData = data;
@@ -321,7 +322,8 @@ export async function handleCreateMissingFolders(state) {
       boardId: config.boardId,
       startDate,
       endDate,
-      excludeFinished
+      excludeFinished,
+      coeName: config.coeName
     });
 
     if (data.createdFolders && Array.isArray(data.createdFolders)) {
@@ -379,7 +381,8 @@ export async function handleScanRecordings(state) {
       mondayApiKey: config.mondayApiKey,
       boardId: config.boardId,
       startDate,
-      endDate
+      endDate,
+      coeName: config.coeName
     });
 
     state.recordingsData = data;

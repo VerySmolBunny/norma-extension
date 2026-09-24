@@ -765,7 +765,10 @@ export class OnboardingController {
         throw new Error('Falta la URL de Apps Script (gasUrl) en Ajustes.');
       }
 
-      const rootFolderId = config.rootDriveFolderId || config.rootClientsFolderId || config.rootFolderId || '12tym4HlpvxjiyVZEMt-q59f3H7V3uqea';
+      const rootFolderId = config.rootDriveFolderId || config.rootClientsFolderId || config.rootFolderId || '';
+      if (!rootFolderId) {
+        throw new Error('Configura la URL de tu Carpeta Raíz de Google Drive en Ajustes (⚙️).');
+      }
 
       const res = await GasService.onboardClient(config.gasUrl, {
         clientName: this.selectedClient.name,
@@ -817,7 +820,10 @@ export class OnboardingController {
       }
 
       const slidesTemplateId = config.slidesKickoffTemplateId || '';
-      const rootFolderId = config.rootDriveFolderId || config.rootClientsFolderId || config.rootFolderId || '12tym4HlpvxjiyVZEMt-q59f3H7V3uqea';
+      const rootFolderId = config.rootDriveFolderId || config.rootClientsFolderId || config.rootFolderId || '';
+      if (!rootFolderId) {
+        throw new Error('Configura la URL de tu Carpeta Raíz de Google Drive en Ajustes (⚙️).');
+      }
 
       const res = await GasService.createKickOffSlides(config.gasUrl, {
         slidesTemplateId: slidesTemplateId,

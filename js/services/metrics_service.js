@@ -147,31 +147,64 @@ export class MetricsService {
    */
   static async fetchFromMonday(config, options = {}) {
     const boardId = config.boardId || '1400120846';
-    const coeName = config.coeName || '';
+    const coeName = (config.coeName || '').trim();
     const onlyVigentes = options.onlyVigentes !== false; // true por defecto
 
-    const query = `
-      query GetClientsForMetrics($boardId: ID!, $personName: [String]!) {
-        items_page_by_column_values(
-          board_id: $boardId,
-          columns: [{ column_id: "person", column_values: $personName }],
-          limit: 500
-        ) {
-          items {
-            id
-            name
-            group {
-              title
-            }
-            column_values {
+    let query;
+    let variables;
+
+    if (coeName) {
+      query = `
+        query GetClientsForMetrics($boardId: ID!, $personName: [String]!) {
+          items_page_by_column_values(
+            board_id: $boardId,
+            columns: [{ column_id: "person", column_values: $personName }],
+            limit: 500
+          ) {
+            items {
               id
-              text
-              value
+              name
+              group {
+                title
+              }
+              column_values {
+                id
+                text
+                value
+              }
             }
           }
         }
-      }
-    `;
+      `;
+      variables = {
+        boardId: String(boardId),
+        personName: [coeName]
+      };
+    } else {
+      query = `
+        query GetClientsForMetricsAll($boardId: ID!) {
+          boards(ids: [$boardId]) {
+            items_page(limit: 500) {
+              items {
+                id
+                name
+                group {
+                  title
+                }
+                column_values {
+                  id
+                  text
+                  value
+                }
+              }
+            }
+          }
+        }
+      `;
+      variables = {
+        boardId: String(boardId)
+      };
+    }
 
     const res = await fetch(MONDAY_API_URL, {
       method: 'POST',
@@ -182,15 +215,12 @@ export class MetricsService {
       },
       body: JSON.stringify({
         query: query,
-        variables: {
-          boardId: String(boardId),
-          personName: [coeName]
-        }
+        variables: variables
       })
     });
 
     const json = await res.json();
-    const items = json?.data?.items_page_by_column_values?.items || [];
+    const items = json?.data?.items_page_by_column_values?.items || json?.data?.boards?.[0]?.items_page?.items || [];
 
     if (items.length === 0) {
       return null;

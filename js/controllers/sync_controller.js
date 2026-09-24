@@ -109,7 +109,8 @@ export async function handleSyncMeetings(state) {
       mondayApiKey: config.mondayApiKey,
       boardId: config.boardId,
       geminiApiKey: config.geminiApiKey,
-      geminiModel: config.geminiModel || 'gemini-3.7-flash'
+      geminiModel: config.geminiModel || 'gemini-3.7-flash',
+      coeName: config.coeName
     });
 
     const rawDrafts = data.drafts || [];

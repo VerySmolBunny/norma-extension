@@ -165,37 +165,67 @@ export class MondayService {
   static async getKOPendingClients(customApiKey = null, customBoardId = null, customCoeName = null) {
     const config = await getConfig();
     const boardId = customBoardId || config.boardId || '1400120846';
-    const coeName = customCoeName || config.coeName || '';
+    const coeName = (customCoeName !== null ? customCoeName : (config.coeName || '')).trim();
 
-    const query = `
-      query GetKOClients($boardId: ID!, $personName: [String]!) {
-        items_page_by_column_values(
-          board_id: $boardId,
-          columns: [{ column_id: "person", column_values: $personName }],
-          limit: 150
-        ) {
-          items {
-            id
-            name
-            group {
-              title
-            }
-            column_values {
+    let query;
+    let variables;
+
+    if (coeName) {
+      query = `
+        query GetKOClients($boardId: ID!, $personName: [String]!) {
+          items_page_by_column_values(
+            board_id: $boardId,
+            columns: [{ column_id: "person", column_values: $personName }],
+            limit: 150
+          ) {
+            items {
               id
-              text
-              value
+              name
+              group {
+                title
+              }
+              column_values {
+                id
+                text
+                value
+              }
             }
           }
         }
-      }
-    `;
+      `;
+      variables = {
+        boardId: String(boardId),
+        personName: [coeName]
+      };
+    } else {
+      query = `
+        query GetKOClientsAll($boardId: ID!) {
+          boards(ids: [$boardId]) {
+            items_page(limit: 150) {
+              items {
+                id
+                name
+                group {
+                  title
+                }
+                column_values {
+                  id
+                  text
+                  value
+                }
+              }
+            }
+          }
+        }
+      `;
+      variables = {
+        boardId: String(boardId)
+      };
+    }
 
-    const data = await queryMonday(query, {
-      boardId: String(boardId),
-      personName: [coeName]
-    }, customApiKey);
+    const data = await queryMonday(query, variables, customApiKey);
 
-    const items = data?.items_page_by_column_values?.items || [];
+    const items = data?.items_page_by_column_values?.items || data?.boards?.[0]?.items_page?.items || [];
     const koClients = [];
 
     items.forEach(it => {

@@ -69,37 +69,75 @@ export class MondayChatService {
    */
   static async fetchLiveMondayClients(config) {
     const boardId = config.boardId || '1400120846';
-    const coeName = config.coeName || '';
+    const coeName = (config.coeName || '').trim();
 
-    const query = `
-      query GetFullPortfolio($boardId: ID!, $personName: [String]!) {
-        boards(ids: [$boardId]) {
-          columns {
-            id
-            title
-            type
-          }
-        }
-        items_page_by_column_values(
-          board_id: $boardId,
-          columns: [{ column_id: "person", column_values: $personName }],
-          limit: 500
-        ) {
-          items {
-            id
-            name
-            group {
-              title
-            }
-            column_values {
+    let query;
+    let variables;
+
+    if (coeName) {
+      query = `
+        query GetFullPortfolio($boardId: ID!, $personName: [String]!) {
+          boards(ids: [$boardId]) {
+            columns {
               id
-              text
-              value
+              title
+              type
+            }
+          }
+          items_page_by_column_values(
+            board_id: $boardId,
+            columns: [{ column_id: "person", column_values: $personName }],
+            limit: 500
+          ) {
+            items {
+              id
+              name
+              group {
+                title
+              }
+              column_values {
+                id
+                text
+                value
+              }
             }
           }
         }
-      }
-    `;
+      `;
+      variables = {
+        boardId: String(boardId),
+        personName: [coeName]
+      };
+    } else {
+      query = `
+        query GetFullPortfolioAll($boardId: ID!) {
+          boards(ids: [$boardId]) {
+            columns {
+              id
+              title
+              type
+            }
+            items_page(limit: 500) {
+              items {
+                id
+                name
+                group {
+                  title
+                }
+                column_values {
+                  id
+                  text
+                  value
+                }
+              }
+            }
+          }
+        }
+      `;
+      variables = {
+        boardId: String(boardId)
+      };
+    }
 
     const res = await fetch(MONDAY_API_URL, {
       method: 'POST',
@@ -110,10 +148,7 @@ export class MondayChatService {
       },
       body: JSON.stringify({
         query: query,
-        variables: {
-          boardId: String(boardId),
-          personName: [coeName]
-        }
+        variables: variables
       })
     });
 
@@ -122,7 +157,7 @@ export class MondayChatService {
       throw new Error(json.errors.map(e => e.message).join(' | '));
     }
 
-    const items = json?.data?.items_page_by_column_values?.items || [];
+    const items = json?.data?.items_page_by_column_values?.items || json?.data?.boards?.[0]?.items_page?.items || [];
     if (items.length === 0) return [];
 
     return items.map(item => {
