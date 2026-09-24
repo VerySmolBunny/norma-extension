@@ -18,31 +18,39 @@ function utf8ToBase64(str) {
   }
 }
 
+function normalizeGasUrl(gasUrl) {
+  if (!gasUrl) return '';
+  let url = gasUrl.trim();
+  url = url.replace(/\/+$/, '');
+  // Si introdujeron una URL con el prefijo de dominio Google Workspace (/a/macros/buk.cl/s/...),
+  // convertirla a la URL global (/macros/s/...) que no fuerza restricciones de cookies de dominio ni errores 403
+  url = url.replace(/\/a\/macros\/[^/]+\/s\//i, '/macros/s/');
+  return url;
+}
+
 export class GasService {
   /**
-   * Sincroniza reuniones desde Google Calendar
+   * Procesa la respuesta de Apps Script de forma segura, detectando HTML y errores de autenticación
    */
-  static async fetchMeetings(gasUrl, params = {}) {
-    const { dateStr, startTime, endTime, mondayApiKey, boardId, geminiApiKey, geminiModel } = params;
-    const url = `${gasUrl}${gasUrl.includes('?') ? '&' : '?'}action=sync_meetings&date=${encodeURIComponent(dateStr || '')}&start_time=${encodeURIComponent(startTime || '00:00')}&end_time=${encodeURIComponent(endTime || '23:59')}&monday_api_key=${encodeURIComponent(mondayApiKey || '')}&board_id=${encodeURIComponent(boardId || '1400120846')}&gemini_api_key=${encodeURIComponent(geminiApiKey || '')}&gemini_model=${encodeURIComponent(geminiModel || 'gemini-3.7-flash')}`;
-
-    const res = await fetch(url, {
-      method: 'GET',
-      headers: { 'Accept': 'application/json' }
-    });
-
+  static async _handleResponse(res) {
     const text = await res.text();
     let data;
     try {
       data = JSON.parse(text);
     } catch (err) {
-      if (text.includes('Sign in') || text.includes('accounts.google.com')) {
-        throw new Error('Tu Web App en Apps Script requiere permisos. Asegúrate de configurarla con "Acceso: Cualquier usuario" al desplegar.');
+      if (text.includes('Sign in') || text.includes('accounts.google.com') || text.includes('ServiceLogin')) {
+        throw new Error('Tu Web App en Apps Script requiere permisos de acceso público o inicio de sesión. Asegúrate de configurarla con "¿Quién tiene acceso? Cualquier usuario" (Anyone) al implementar la aplicación web en Google Apps Script.');
       }
-      throw new Error('Respuesta no válida de Apps Script: ' + text.slice(0, 100));
+      if (text.includes('script.google.com') && (text.includes('/edit') || text.includes('/d/'))) {
+        throw new Error('La URL configurada en Ajustes parece ser la del editor de Apps Script. Debe ser la URL de la aplicación web que termina en /exec.');
+      }
+      if (text.trim().startsWith('<')) {
+        throw new Error('Google Apps Script respondió con una página web (HTML) en lugar de datos JSON. Revisa que la URL de Apps Script en Ajustes termine en /exec y que el despliegue tenga acceso configurado en "Cualquier usuario" (Anyone).');
+      }
+      throw new Error(`Respuesta no válida de Apps Script: ${text.slice(0, 100)}`);
     }
 
-    if (data.status === 'error') {
+    if (data && data.status === 'error') {
       throw new Error(data.message || 'Error desconocido en Apps Script');
     }
 
@@ -50,87 +58,97 @@ export class GasService {
   }
 
   /**
+   * Sincroniza reuniones desde Google Calendar
+   */
+  static async fetchMeetings(gasUrl, params = {}) {
+    const cleanUrl = normalizeGasUrl(gasUrl);
+    const { dateStr, startTime, endTime, mondayApiKey, boardId, geminiApiKey, geminiModel } = params;
+    const url = `${cleanUrl}${cleanUrl.includes('?') ? '&' : '?'}action=sync_meetings&date=${encodeURIComponent(dateStr || '')}&start_time=${encodeURIComponent(startTime || '00:00')}&end_time=${encodeURIComponent(endTime || '23:59')}&monday_api_key=${encodeURIComponent(mondayApiKey || '')}&board_id=${encodeURIComponent(boardId || '1400120846')}&gemini_api_key=${encodeURIComponent(geminiApiKey || '')}&gemini_model=${encodeURIComponent(geminiModel || 'gemini-3.7-flash')}`;
+
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' }
+    });
+
+    return await this._handleResponse(res);
+  }
+
+  /**
    * Compara carpetas en Drive con clientes de Monday
    */
   static async syncFolders(gasUrl, params = {}) {
+    const cleanUrl = normalizeGasUrl(gasUrl);
     const { rootFolderId, mondayApiKey, boardId, startDate, endDate, excludeFinished } = params;
-    let url = `${gasUrl}${gasUrl.includes('?') ? '&' : '?'}action=sync_folders&root_folder_id=${encodeURIComponent(rootFolderId)}&monday_api_key=${encodeURIComponent(mondayApiKey || '')}&board_id=${encodeURIComponent(boardId || '1400120846')}`;
+    let url = `${cleanUrl}${cleanUrl.includes('?') ? '&' : '?'}action=sync_folders&root_folder_id=${encodeURIComponent(rootFolderId)}&monday_api_key=${encodeURIComponent(mondayApiKey || '')}&board_id=${encodeURIComponent(boardId || '1400120846')}`;
     if (startDate) url += `&start_date=${encodeURIComponent(startDate)}`;
     if (endDate) url += `&end_date=${encodeURIComponent(endDate)}`;
     if (excludeFinished) url += `&exclude_finished=true`;
 
     const res = await fetch(url);
-    const data = await res.json();
-    if (data.status === 'error') throw new Error(data.message);
-    return data;
+    return await this._handleResponse(res);
   }
 
   /**
    * Obtiene o busca la carpeta de un cliente en Google Drive
    */
   static async getClientFolder(gasUrl, params = {}) {
+    const cleanUrl = normalizeGasUrl(gasUrl);
     const { rootFolderId, clientName, createIfMissing = false } = params;
-    let url = `${gasUrl}${gasUrl.includes('?') ? '&' : '?'}action=get_client_folder&root_folder_id=${encodeURIComponent(rootFolderId)}&client_name=${encodeURIComponent(clientName || '')}`;
+    let url = `${cleanUrl}${cleanUrl.includes('?') ? '&' : '?'}action=get_client_folder&root_folder_id=${encodeURIComponent(rootFolderId)}&client_name=${encodeURIComponent(clientName || '')}`;
     if (createIfMissing) url += `&create_if_missing=true`;
 
     const res = await fetch(url);
-    const data = await res.json();
-    if (data.status === 'error') throw new Error(data.message);
-    return data;
+    return await this._handleResponse(res);
   }
 
   /**
    * Crea carpetas faltantes en Google Drive
    */
   static async createMissingFolders(gasUrl, params = {}) {
+    const cleanUrl = normalizeGasUrl(gasUrl);
     const { rootFolderId, mondayApiKey, boardId, startDate, endDate, excludeFinished } = params;
-    let url = `${gasUrl}${gasUrl.includes('?') ? '&' : '?'}action=create_missing_folders&root_folder_id=${encodeURIComponent(rootFolderId)}&monday_api_key=${encodeURIComponent(mondayApiKey || '')}&board_id=${encodeURIComponent(boardId || '1400120846')}`;
+    let url = `${cleanUrl}${cleanUrl.includes('?') ? '&' : '?'}action=create_missing_folders&root_folder_id=${encodeURIComponent(rootFolderId)}&monday_api_key=${encodeURIComponent(mondayApiKey || '')}&board_id=${encodeURIComponent(boardId || '1400120846')}`;
     if (startDate) url += `&start_date=${encodeURIComponent(startDate)}`;
     if (endDate) url += `&end_date=${encodeURIComponent(endDate)}`;
     if (excludeFinished) url += `&exclude_finished=true`;
 
     const res = await fetch(url);
-    const data = await res.json();
-    if (data.status === 'error') throw new Error(data.message);
-    return data;
+    return await this._handleResponse(res);
   }
 
   /**
    * Escanea grabaciones en carpetas de Meet
    */
   static async scanRecordings(gasUrl, params = {}) {
+    const cleanUrl = normalizeGasUrl(gasUrl);
     const { recordingsFolderIds, rootFolderId, mondayApiKey, boardId, startDate, endDate } = params;
-    let url = `${gasUrl}${gasUrl.includes('?') ? '&' : '?'}action=scan_recordings&recordings_folder_id=${encodeURIComponent(recordingsFolderIds)}&root_folder_id=${encodeURIComponent(rootFolderId)}&monday_api_key=${encodeURIComponent(mondayApiKey || '')}&board_id=${encodeURIComponent(boardId || '1400120846')}`;
+    let url = `${cleanUrl}${cleanUrl.includes('?') ? '&' : '?'}action=scan_recordings&recordings_folder_id=${encodeURIComponent(recordingsFolderIds)}&root_folder_id=${encodeURIComponent(rootFolderId)}&monday_api_key=${encodeURIComponent(mondayApiKey || '')}&board_id=${encodeURIComponent(boardId || '1400120846')}`;
     if (startDate) url += `&start_date=${encodeURIComponent(startDate)}`;
     if (endDate) url += `&end_date=${encodeURIComponent(endDate)}`;
 
     const res = await fetch(url);
-    const data = await res.json();
-    if (data.status === 'error') throw new Error(data.message);
-    return data;
+    return await this._handleResponse(res);
   }
 
   /**
    * Mueve grabaciones a sus respectivas carpetas de clientes
    */
   static async moveRecordings(gasUrl, moves) {
-    const url = `${gasUrl}${gasUrl.includes('?') ? '&' : '?'}action=move_recordings&moves=${encodeURIComponent(JSON.stringify(moves))}`;
+    const cleanUrl = normalizeGasUrl(gasUrl);
+    const url = `${cleanUrl}${cleanUrl.includes('?') ? '&' : '?'}action=move_recordings&moves=${encodeURIComponent(JSON.stringify(moves))}`;
     const res = await fetch(url);
-    const data = await res.json();
-    if (data.status === 'error') throw new Error(data.message);
-    return data;
+    return await this._handleResponse(res);
   }
 
   /**
    * Obtiene clientes pendientes de Kick Off desde Monday vía Apps Script
    */
   static async getKOPendingClients(gasUrl, params = {}) {
+    const cleanUrl = normalizeGasUrl(gasUrl);
     const { mondayApiKey, boardId } = params;
-    const url = `${gasUrl}${gasUrl.includes('?') ? '&' : '?'}action=get_ko_pending_clients&monday_api_key=${encodeURIComponent(mondayApiKey || '')}&board_id=${encodeURIComponent(boardId || '1400120846')}`;
+    const url = `${cleanUrl}${cleanUrl.includes('?') ? '&' : '?'}action=get_ko_pending_clients&monday_api_key=${encodeURIComponent(mondayApiKey || '')}&board_id=${encodeURIComponent(boardId || '1400120846')}`;
     const res = await fetch(url);
-    const data = await res.json();
-    if (data.status === 'error') throw new Error(data.message);
-    return data;
+    return await this._handleResponse(res);
   }
 
   /**
@@ -163,15 +181,14 @@ export class GasService {
       _b64_encoded: true
     };
 
-    const res = await fetch(gasUrl, {
+    const cleanUrl = normalizeGasUrl(gasUrl);
+    const res = await fetch(cleanUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(payload)
     });
 
-    const data = await res.json();
-    if (data.status === 'error') throw new Error(data.message);
-    return data;
+    return await this._handleResponse(res);
   }
 
   /**
@@ -189,15 +206,14 @@ export class GasService {
       asset_type: assetType || 'header'
     };
 
-    const res = await fetch(gasUrl, {
+    const cleanUrl = normalizeGasUrl(gasUrl);
+    const res = await fetch(cleanUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(payload)
     });
 
-    const data = await res.json();
-    if (data.status === 'error') throw new Error(data.message);
-    return data;
+    return await this._handleResponse(res);
   }
 
   /**
@@ -235,15 +251,14 @@ export class GasService {
       _b64_encoded: true
     };
 
-    const res = await fetch(gasUrl, {
+    const cleanUrl = normalizeGasUrl(gasUrl);
+    const res = await fetch(cleanUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(payload)
     });
 
-    const data = await res.json();
-    if (data.status === 'error') throw new Error(data.message);
-    return data;
+    return await this._handleResponse(res);
   }
 
   /**
@@ -303,15 +318,14 @@ export class GasService {
       _b64_encoded: true
     };
 
-    const res = await fetch(gasUrl, {
+    const cleanUrl = normalizeGasUrl(gasUrl);
+    const res = await fetch(cleanUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(payload)
     });
 
-    const data = await res.json();
-    if (data.status === 'error') throw new Error(data.message);
-    return data;
+    return await this._handleResponse(res);
   }
 
   /**
@@ -328,15 +342,14 @@ export class GasService {
       root_folder_id: rootFolderId || ''
     };
 
-    const res = await fetch(gasUrl, {
+    const cleanUrl = normalizeGasUrl(gasUrl);
+    const res = await fetch(cleanUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(payload)
     });
 
-    const data = await res.json();
-    if (data.status === 'error') throw new Error(data.message || 'Error al obtener transcripciones de Drive');
-    return data;
+    return await this._handleResponse(res);
   }
 
   /**

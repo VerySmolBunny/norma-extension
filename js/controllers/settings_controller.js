@@ -121,6 +121,45 @@ export function initSettingsController() {
     btnSaveSettings.addEventListener('click', handleSaveSettings);
   }
 
+  // Botones para Autorizar Permisos en Google (Dashboard y Sidepanel)
+  const handleAuthGas = async () => {
+    const config = await getConfig();
+    const inputGasUrl = document.getElementById('inputGasUrl');
+    let gasUrl = (inputGasUrl && inputGasUrl.value.trim()) || config.gasUrl || '';
+
+    if (!gasUrl) {
+      showToast('⚠️ Por favor ingresa primero la URL de Google Apps Script');
+      return;
+    }
+
+    if (gasUrl.includes('/edit') || (!gasUrl.includes('/exec') && !gasUrl.includes('/macros/s/'))) {
+      alert('⚠️ ATENCIÓN: La URL guardada en Ajustes es del editor de código (termina en /edit), no de la aplicación web.\n\nPara obtener la URL correcta:\n1. En tu ventana de Apps Script, haz clic arriba a la derecha en el botón azul "Implementar" > "Administrar implementaciones".\n2. En la sección "Aplicación web", copia la "URL" (termina en /exec).\n3. Desbloquea Ajustes, pega esa URL en el campo y pulsa "Guardar Ajustes".\n4. Luego pulsa nuevamente este botón para autorizar los permisos.');
+      return;
+    }
+
+    // Normalizar la URL (remover /a/macros/domain si existe para evitar restricciones)
+    let cleanUrl = gasUrl.replace(/\/+$/, '').replace(/\/a\/macros\/[^/]+\/s\//i, '/macros/s/');
+    const authUrl = `${cleanUrl}${cleanUrl.includes('?') ? '&' : '?'}action=auth`;
+
+    if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.create) {
+      chrome.tabs.create({ url: authUrl });
+    } else {
+      window.open(authUrl, '_blank');
+    }
+
+    showToast('🚀 Abriendo página de autorización de Google...');
+  };
+
+  const btnAuthGas = document.getElementById('btnAuthGas');
+  if (btnAuthGas) {
+    btnAuthGas.addEventListener('click', handleAuthGas);
+  }
+
+  const btnAuthGasSidepanel = document.getElementById('btnAuthGasSidepanel');
+  if (btnAuthGasSidepanel) {
+    btnAuthGasSidepanel.addEventListener('click', handleAuthGas);
+  }
+
   // Botón maestro de bloqueo/desbloqueo global en Dashboard
   const btnToggleGlobal = document.getElementById('btnToggleGlobalLock');
   if (btnToggleGlobal) {
@@ -242,6 +281,10 @@ export async function handleSaveSettings() {
   };
 
   await saveConfig(newConfig);
+
+  if (newConfig.gasUrl && newConfig.gasUrl.includes('/edit')) {
+    alert('⚠️ AVISO: Has guardado una URL que termina en /edit (del editor de código de Apps Script).\n\nPara que la sincronización funcione, debes ingresar la URL de la aplicación web que termina en /exec (obtenida desde "Implementar" > "Administrar implementaciones" en Apps Script).');
+  }
 
   // Guardar configuración de Firebase / Plantillas
   try {

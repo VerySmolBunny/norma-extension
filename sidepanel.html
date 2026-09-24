@@ -89,7 +89,12 @@
         </div>
 
         <div class="form-group">
-          <label for="inputGasUrl">URL Web App de Google Apps Script</label>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <label for="inputGasUrl" style="margin-bottom: 0;">URL Web App de Google Apps Script</label>
+            <button type="button" id="btnAuthGasSidepanel" class="btn-tool-secondary" style="font-size: 11px; padding: 2px 7px; cursor: pointer;" title="Autorizar permisos de Google en 1 clic">
+              🔑 Autorizar
+            </button>
+          </div>
           <input type="url" id="inputGasUrl" class="form-input" placeholder="https://script.google.com/macros/s/.../exec" disabled>
           <div class="form-help">Pega la URL de tu Web App desplegada en Google Apps Script.</div>
         </div>

@@ -1054,9 +1054,14 @@
               </div>
 
               <div class="form-group">
-                <label for="inputGasUrl">URL Web App de Google Apps Script</label>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <label for="inputGasUrl" style="margin-bottom: 0;">URL Web App de Google Apps Script</label>
+                  <button type="button" id="btnAuthGas" class="btn btn-secondary" style="font-size: 11.5px; padding: 4px 10px; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; cursor: pointer; border-radius: 6px;" title="Abre una ventana en Google para autorizar los permisos de Drive, Calendar, Gmail y Slides sin tocar código">
+                    🔑 Autorizar Permisos en Google
+                  </button>
+                </div>
                 <input type="url" id="inputGasUrl" class="form-input" placeholder="https://script.google.com/macros/s/.../exec" disabled>
-                <div class="form-help">Pega la URL del despliegue de tu Web App en Google Apps Script.</div>
+                <div class="form-help">Pega la URL de tu Web App (/exec). Si es la primera vez o cambiaste de equipo, pulsa <strong>Autorizar Permisos en Google</strong> para conceder accesos con 1 clic sin tocar código.</div>
               </div>
 
               <div class="form-group">
