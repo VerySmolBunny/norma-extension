@@ -140,8 +140,8 @@ export function initSettingsController() {
       return;
     }
 
-    // Normalizar la URL (remover /a/macros/domain si existe para evitar restricciones)
-    let cleanUrl = gasUrl.replace(/\/+$/, '').replace(/\/a\/macros\/[^/]+\/s\//i, '/macros/s/');
+    // Normalizar la URL sin romper prefijos de dominio Google Workspace (/a/macros/buk.cl/s/...)
+    let cleanUrl = gasUrl.trim().replace(/\/+$/, '');
     const authUrl = `${cleanUrl}${cleanUrl.includes('?') ? '&' : '?'}action=auth`;
 
     if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.create) {

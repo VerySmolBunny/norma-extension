@@ -20,12 +20,7 @@ function utf8ToBase64(str) {
 
 function normalizeGasUrl(gasUrl) {
   if (!gasUrl) return '';
-  let url = gasUrl.trim();
-  url = url.replace(/\/+$/, '');
-  // Si introdujeron una URL con el prefijo de dominio Google Workspace (/a/macros/buk.cl/s/...),
-  // convertirla a la URL global (/macros/s/...) que no fuerza restricciones de cookies de dominio ni errores 403
-  url = url.replace(/\/a\/macros\/[^/]+\/s\//i, '/macros/s/');
-  return url;
+  return gasUrl.trim().replace(/\/+$/, '');
 }
 
 export class GasService {
