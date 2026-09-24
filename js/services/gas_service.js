@@ -34,11 +34,7 @@ export class GasService {
    * y permitir que Apps Script ejecute con la cuenta activa del usuario.
    */
   static async _fetch(url, options = {}) {
-    const fetchOptions = {
-      ...options,
-      credentials: 'include'
-    };
-    return await fetch(url, fetchOptions);
+    return await fetch(url, options);
   }
 
   /**
