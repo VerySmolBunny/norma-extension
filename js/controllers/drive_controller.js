@@ -196,7 +196,8 @@ export async function handleSyncFolders(state) {
       startDate,
       endDate,
       excludeFinished,
-      coeName: config.coeName
+      coeName: config.coeName,
+      userEmail: config.coeEmail || ''
     });
 
     state.folderSyncData = data;
@@ -323,7 +324,8 @@ export async function handleCreateMissingFolders(state) {
       startDate,
       endDate,
       excludeFinished,
-      coeName: config.coeName
+      coeName: config.coeName,
+      userEmail: config.coeEmail || ''
     });
 
     if (data.createdFolders && Array.isArray(data.createdFolders)) {
@@ -382,7 +384,8 @@ export async function handleScanRecordings(state) {
       boardId: config.boardId,
       startDate,
       endDate,
-      coeName: config.coeName
+      coeName: config.coeName,
+      userEmail: config.coeEmail || ''
     });
 
     state.recordingsData = data;

@@ -30,6 +30,37 @@ function normalizeGasUrl(gasUrl) {
 
 export class GasService {
   /**
+   * Wrapper central de fetch con credentials: 'include' para enviar cookies de sesión de Google
+   * y permitir que Apps Script ejecute con la cuenta activa del usuario.
+   */
+  static async _fetch(url, options = {}) {
+    const fetchOptions = {
+      ...options,
+      credentials: 'include'
+    };
+    return await fetch(url, fetchOptions);
+  }
+
+  /**
+   * Consulta a Apps Script qué cuenta de Google está ejecutando el script
+   */
+  static async getConnectedAccount(gasUrl) {
+    if (!gasUrl) return null;
+    try {
+      const cleanUrl = normalizeGasUrl(gasUrl);
+      const url = `${cleanUrl}${cleanUrl.includes('?') ? '&' : '?'}action=whoami`;
+      const res = await this._fetch(url, {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' }
+      });
+      return await this._handleResponse(res);
+    } catch (e) {
+      console.warn('Error verificando cuenta conectada:', e);
+      return null;
+    }
+  }
+
+  /**
    * Procesa la respuesta de Apps Script de forma segura, detectando HTML y errores de autenticación
    */
   static async _handleResponse(res) {
@@ -62,11 +93,12 @@ export class GasService {
    */
   static async fetchMeetings(gasUrl, params = {}) {
     const cleanUrl = normalizeGasUrl(gasUrl);
-    const { dateStr, startTime, endTime, mondayApiKey, boardId, geminiApiKey, geminiModel, coeName } = params;
+    const { dateStr, startTime, endTime, mondayApiKey, boardId, geminiApiKey, geminiModel, coeName, userEmail } = params;
     let url = `${cleanUrl}${cleanUrl.includes('?') ? '&' : '?'}action=sync_meetings&date=${encodeURIComponent(dateStr || '')}&start_time=${encodeURIComponent(startTime || '00:00')}&end_time=${encodeURIComponent(endTime || '23:59')}&monday_api_key=${encodeURIComponent(mondayApiKey || '')}&board_id=${encodeURIComponent(boardId || '1400120846')}&gemini_api_key=${encodeURIComponent(geminiApiKey || '')}&gemini_model=${encodeURIComponent(geminiModel || 'gemini-3.7-flash')}`;
     if (coeName) url += `&coe_name=${encodeURIComponent(coeName)}`;
+    if (userEmail) url += `&user_email=${encodeURIComponent(userEmail)}`;
 
-    const res = await fetch(url, {
+    const res = await this._fetch(url, {
       method: 'GET',
       headers: { 'Accept': 'application/json' }
     });
@@ -79,14 +111,15 @@ export class GasService {
    */
   static async syncFolders(gasUrl, params = {}) {
     const cleanUrl = normalizeGasUrl(gasUrl);
-    const { rootFolderId, mondayApiKey, boardId, startDate, endDate, excludeFinished, coeName } = params;
+    const { rootFolderId, mondayApiKey, boardId, startDate, endDate, excludeFinished, coeName, userEmail } = params;
     let url = `${cleanUrl}${cleanUrl.includes('?') ? '&' : '?'}action=sync_folders&root_folder_id=${encodeURIComponent(rootFolderId)}&monday_api_key=${encodeURIComponent(mondayApiKey || '')}&board_id=${encodeURIComponent(boardId || '1400120846')}`;
     if (startDate) url += `&start_date=${encodeURIComponent(startDate)}`;
     if (endDate) url += `&end_date=${encodeURIComponent(endDate)}`;
     if (excludeFinished) url += `&exclude_finished=true`;
     if (coeName) url += `&coe_name=${encodeURIComponent(coeName)}`;
+    if (userEmail) url += `&user_email=${encodeURIComponent(userEmail)}`;
 
-    const res = await fetch(url);
+    const res = await this._fetch(url);
     return await this._handleResponse(res);
   }
 
@@ -99,7 +132,7 @@ export class GasService {
     let url = `${cleanUrl}${cleanUrl.includes('?') ? '&' : '?'}action=get_client_folder&root_folder_id=${encodeURIComponent(rootFolderId)}&client_name=${encodeURIComponent(clientName || '')}`;
     if (createIfMissing) url += `&create_if_missing=true`;
 
-    const res = await fetch(url);
+    const res = await this._fetch(url);
     return await this._handleResponse(res);
   }
 
@@ -108,14 +141,15 @@ export class GasService {
    */
   static async createMissingFolders(gasUrl, params = {}) {
     const cleanUrl = normalizeGasUrl(gasUrl);
-    const { rootFolderId, mondayApiKey, boardId, startDate, endDate, excludeFinished, coeName } = params;
+    const { rootFolderId, mondayApiKey, boardId, startDate, endDate, excludeFinished, coeName, userEmail } = params;
     let url = `${cleanUrl}${cleanUrl.includes('?') ? '&' : '?'}action=create_missing_folders&root_folder_id=${encodeURIComponent(rootFolderId)}&monday_api_key=${encodeURIComponent(mondayApiKey || '')}&board_id=${encodeURIComponent(boardId || '1400120846')}`;
     if (startDate) url += `&start_date=${encodeURIComponent(startDate)}`;
     if (endDate) url += `&end_date=${encodeURIComponent(endDate)}`;
     if (excludeFinished) url += `&exclude_finished=true`;
     if (coeName) url += `&coe_name=${encodeURIComponent(coeName)}`;
+    if (userEmail) url += `&user_email=${encodeURIComponent(userEmail)}`;
 
-    const res = await fetch(url);
+    const res = await this._fetch(url);
     return await this._handleResponse(res);
   }
 
@@ -124,13 +158,14 @@ export class GasService {
    */
   static async scanRecordings(gasUrl, params = {}) {
     const cleanUrl = normalizeGasUrl(gasUrl);
-    const { recordingsFolderIds, rootFolderId, mondayApiKey, boardId, startDate, endDate, coeName } = params;
+    const { recordingsFolderIds, rootFolderId, mondayApiKey, boardId, startDate, endDate, coeName, userEmail } = params;
     let url = `${cleanUrl}${cleanUrl.includes('?') ? '&' : '?'}action=scan_recordings&recordings_folder_id=${encodeURIComponent(recordingsFolderIds)}&root_folder_id=${encodeURIComponent(rootFolderId)}&monday_api_key=${encodeURIComponent(mondayApiKey || '')}&board_id=${encodeURIComponent(boardId || '1400120846')}`;
     if (startDate) url += `&start_date=${encodeURIComponent(startDate)}`;
     if (endDate) url += `&end_date=${encodeURIComponent(endDate)}`;
     if (coeName) url += `&coe_name=${encodeURIComponent(coeName)}`;
+    if (userEmail) url += `&user_email=${encodeURIComponent(userEmail)}`;
 
-    const res = await fetch(url);
+    const res = await this._fetch(url);
     return await this._handleResponse(res);
   }
 
@@ -140,7 +175,7 @@ export class GasService {
   static async moveRecordings(gasUrl, moves) {
     const cleanUrl = normalizeGasUrl(gasUrl);
     const url = `${cleanUrl}${cleanUrl.includes('?') ? '&' : '?'}action=move_recordings&moves=${encodeURIComponent(JSON.stringify(moves))}`;
-    const res = await fetch(url);
+    const res = await this._fetch(url);
     return await this._handleResponse(res);
   }
 
@@ -152,7 +187,7 @@ export class GasService {
     const { mondayApiKey, boardId, coeName } = params;
     let url = `${cleanUrl}${cleanUrl.includes('?') ? '&' : '?'}action=get_ko_pending_clients&monday_api_key=${encodeURIComponent(mondayApiKey || '')}&board_id=${encodeURIComponent(boardId || '1400120846')}`;
     if (coeName) url += `&coe_name=${encodeURIComponent(coeName)}`;
-    const res = await fetch(url);
+    const res = await this._fetch(url);
     return await this._handleResponse(res);
   }
 
@@ -160,7 +195,7 @@ export class GasService {
    * Crea un borrador de correo de bienvenida en Gmail vía Apps Script
    */
   static async createWelcomeDraft(gasUrl, params = {}) {
-    const { clientName, recipient, agendaUrl, subject, htmlBody, headerAsset, footerAsset } = params;
+    const { clientName, recipient, agendaUrl, subject, htmlBody, headerAsset, footerAsset, userEmail } = params;
 
     // Sanitizar residuos corruptos de emojis antes de enviar
     const cleanSubject = (subject || '').replace(/[\uFFFD\uFFFE]+/g, '🚀');
@@ -183,11 +218,12 @@ export class GasService {
       html_body_b64: utf8ToBase64(safeHtmlBody),
       header_asset: headerAsset || '',
       footer_asset: footerAsset || '',
+      user_email: userEmail || '',
       _b64_encoded: true
     };
 
     const cleanUrl = normalizeGasUrl(gasUrl);
-    const res = await fetch(cleanUrl, {
+    const res = await this._fetch(cleanUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(payload)
@@ -212,7 +248,7 @@ export class GasService {
     };
 
     const cleanUrl = normalizeGasUrl(gasUrl);
-    const res = await fetch(cleanUrl, {
+    const res = await this._fetch(cleanUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(payload)
@@ -257,7 +293,7 @@ export class GasService {
     };
 
     const cleanUrl = normalizeGasUrl(gasUrl);
-    const res = await fetch(cleanUrl, {
+    const res = await this._fetch(cleanUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(payload)
@@ -324,7 +360,7 @@ export class GasService {
     };
 
     const cleanUrl = normalizeGasUrl(gasUrl);
-    const res = await fetch(cleanUrl, {
+    const res = await this._fetch(cleanUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(payload)
@@ -348,7 +384,7 @@ export class GasService {
     };
 
     const cleanUrl = normalizeGasUrl(gasUrl);
-    const res = await fetch(cleanUrl, {
+    const res = await this._fetch(cleanUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(payload)

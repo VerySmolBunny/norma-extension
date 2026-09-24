@@ -103,10 +103,15 @@ function doGet(e) {
 
   // Flujo interactivo de autorización y verificación desde el navegador (1 clic desde la extensión)
   if (!action || action === 'auth' || action === 'authorize' || action === 'test_auth') {
-    let userEmail = '';
+    let activeUser = '';
+    let effectiveUser = '';
     try {
-      userEmail = Session.getActiveUser().getEmail() || Session.getEffectiveUser().getEmail();
+      activeUser = Session.getActiveUser().getEmail();
+      effectiveUser = Session.getEffectiveUser().getEmail();
     } catch (err) {}
+
+    const displayEmail = activeUser || effectiveUser || 'tu cuenta de Google';
+    const isOwnerDelegated = Boolean(effectiveUser && activeUser && effectiveUser !== activeUser);
 
     // Llamadas simples para forzar la activación y verificación de todos los permisos requeridos
     try {
@@ -222,7 +227,15 @@ function doGet(e) {
     <div class="icon">✨</div>
     <div class="badge">Conexión Verificada</div>
     <h1>¡Permisos Autorizados con Éxito!</h1>
-    <p>La cuenta <strong>${userEmail || 'de Google'}</strong> ha concedido acceso a Google Apps Script para sincronizarse con <strong>Norma Hub</strong>.</p>
+    <p>La cuenta <strong>${displayEmail}</strong> está conectada con <strong>Norma Hub</strong>.</p>
+    ${isOwnerDelegated ? `
+    <div style="background: rgba(234, 179, 8, 0.15); border: 1px solid #eab308; color: #fde047; padding: 12px 14px; border-radius: 10px; margin-bottom: 20px; font-size: 13px; text-align: left; line-height: 1.5;">
+      ⚠️ <strong>Modo Propietario Compartido:</strong> Esta aplicación web se está ejecutando bajo la cuenta de <strong>${effectiveUser}</strong>.<br><br>
+      Para que cada consultor trabaje automáticamente con su propio Calendar y buzón de Gmail sin usar la cuenta del creador, en <em>script.google.com</em> ve a <strong>Implementar &gt; Administrar implementaciones &gt; Editar</strong> y cambia <strong>"Ejecutar como"</strong> a <strong>"El usuario que accede a la aplicación web"</strong>.
+    </div>` : `
+    <div style="background: rgba(16, 185, 129, 0.12); border: 1px solid #10b981; color: #34d399; padding: 10px 14px; border-radius: 10px; margin-bottom: 20px; font-size: 13px; text-align: left;">
+      ✅ <strong>Cuenta activa:</strong> Tus reuniones de Google Calendar y borradores de Gmail se gestionarán directamente en tu buzón (<strong>${displayEmail}</strong>).
+    </div>`}
     
     <div class="permissions-box">
       <div class="perm-item">📁 <strong>Google Drive:</strong> Carpetas de clientes y grabaciones</div>
@@ -292,6 +305,7 @@ function handleRequest(params) {
     const mondayApiKey = params.monday_api_key || CONFIG.MONDAY_API_KEY;
     const boardId = params.board_id || CONFIG.BOARD_ID;
     const coeName = params.coe_name || params.person_name || CONFIG.COE_NAME || '';
+    const userEmail = params.user_email || params.email || '';
     let rawRoot = params.root_folder_id;
     if (!rawRoot || rawRoot === 'undefined' || rawRoot === 'null') {
       rawRoot = CONFIG.ROOT_CLIENTS_FOLDER_ID;
@@ -307,6 +321,26 @@ function handleRequest(params) {
     let responseData = {};
 
     switch (action) {
+      // Diagnóstico de cuenta activa y modo de ejecución
+      case 'whoami':
+      case 'get_user': {
+        let activeUser = '';
+        let effectiveUser = '';
+        try {
+          activeUser = Session.getActiveUser().getEmail();
+          effectiveUser = Session.getEffectiveUser().getEmail();
+        } catch (e) {}
+        responseData = {
+          status: 'success',
+          activeUser: activeUser,
+          effectiveUser: effectiveUser,
+          email: activeUser || effectiveUser,
+          isUserMode: !!activeUser && activeUser !== effectiveUser,
+          isOwnerMode: !activeUser || activeUser === effectiveUser
+        };
+        break;
+      }
+
       // 1. Sincronización de Reuniones de Calendar
       case 'sync_meetings': {
         const dateParam = params.date;
@@ -321,7 +355,7 @@ function handleRequest(params) {
           }
         }
 
-        const result = generateDraftsForDate(targetDate, startTimeParam, endTimeParam, mondayApiKey, boardId, geminiApiKey, coeName);
+        const result = generateDraftsForDate(targetDate, startTimeParam, endTimeParam, mondayApiKey, boardId, geminiApiKey, coeName, userEmail);
         responseData = {
           status: 'success',
           date: Utilities.formatDate(targetDate, Session.getScriptTimeZone(), 'yyyy-MM-dd'),
@@ -1133,8 +1167,18 @@ function moveFileSafely(file, targetFolder) {
 /**
  * HERRAMIENTA 1: Sincronizador de Reuniones de Calendar
  */
-function generateDraftsForDate(targetDate, startTimeStr, endTimeStr, mondayApiKey, boardId, geminiApiKey, coeName) {
-  const calendar = CalendarApp.getDefaultCalendar();
+function generateDraftsForDate(targetDate, startTimeStr, endTimeStr, mondayApiKey, boardId, geminiApiKey, coeName, userEmail) {
+  let calendar = null;
+  if (userEmail && userEmail.includes('@')) {
+    try {
+      calendar = CalendarApp.getCalendarById(userEmail);
+    } catch (e) {
+      Logger.log('No se pudo acceder al calendario por ID ' + userEmail + ': ' + e);
+    }
+  }
+  if (!calendar) {
+    calendar = CalendarApp.getDefaultCalendar();
+  }
   const tz = Session.getScriptTimeZone();
 
   let startHour = 0, startMin = 0;
@@ -1206,7 +1250,7 @@ function generateDraftsForDate(targetDate, startTimeStr, endTimeStr, mondayApiKe
       : buildFollowUpMinuta(dateFormatted, docInfo, description, title, matchedClient, geminiApiKey, coeName);
 
     let nextMeetingCard = null;
-    const nextEvent = findNextMeetingForClient(matchedClient, new Date());
+    const nextEvent = findNextMeetingForClient(matchedClient, new Date(), userEmail);
     if (nextEvent) {
       nextMeetingCard = buildNextMeetingCard(dateFormatted, nextEvent);
     }
@@ -1675,8 +1719,18 @@ function matchClient(eventTitle, attendees, description, clients) {
   return null;
 }
 
-function findNextMeetingForClient(client, fromDate) {
-  const calendar = CalendarApp.getDefaultCalendar();
+function findNextMeetingForClient(client, fromDate, userEmail) {
+  let calendar = null;
+  if (userEmail && userEmail.includes('@')) {
+    try {
+      calendar = CalendarApp.getCalendarById(userEmail);
+    } catch (e) {
+      Logger.log('No se pudo acceder a calendario de ' + userEmail + ' en findNextMeetingForClient: ' + e);
+    }
+  }
+  if (!calendar) {
+    calendar = CalendarApp.getDefaultCalendar();
+  }
   const toDate = new Date(fromDate.getTime() + (30 * 24 * 60 * 60 * 1000));
   const events = calendar.getEvents(fromDate, toDate);
 

@@ -1061,6 +1061,7 @@
                   </button>
                 </div>
                 <input type="url" id="inputGasUrl" class="form-input" placeholder="https://script.google.com/macros/s/.../exec" disabled>
+                <div id="gasConnectedAccountBadge" style="display: none; margin-top: 6px; font-size: 12px; padding: 6px 10px; border-radius: 6px; background: #f8fafc; border: 1px solid #e2e8f0; color: #475569;"></div>
                 <div class="form-help">Pega la URL de tu Web App (/exec). Si es la primera vez o cambiaste de equipo, pulsa <strong>Autorizar Permisos en Google</strong> para conceder accesos con 1 clic sin tocar código.</div>
               </div>
 
@@ -1074,6 +1075,15 @@
                 <label for="inputCoeName">Tu Nombre en Monday.com (Consultor / COE Asignado)</label>
                 <input type="text" id="inputCoeName" class="form-input" placeholder="Ej: Juan Pérez" disabled>
                 <div class="form-help">💡 Tu nombre exacto tal como figura en la columna <strong>"Persona / COE"</strong> de Monday.com. La extensión lo usará para filtrar únicamente tu cartera de clientes y reuniones.</div>
+              </div>
+
+              <div class="form-group">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <label for="inputCoeEmail" style="margin-bottom: 0;">Tu Correo de Google (@buk.cl)</label>
+                  <span id="googleAccountBadge" style="display: none; font-size: 11px; padding: 2px 8px; border-radius: 12px; background: #e0f2fe; color: #0369a1; font-weight: 500;"></span>
+                </div>
+                <input type="email" id="inputCoeEmail" class="form-input" placeholder="Ej: usuario@buk.cl" disabled>
+                <div class="form-help">💡 Tu correo Google corporativo. La extensión lo detecta automáticamente de tu perfil de Chrome para sincronizar tus reuniones de Calendar y crear tus borradores de Gmail.</div>
               </div>
 
               <div class="form-group">

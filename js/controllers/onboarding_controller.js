@@ -34,6 +34,7 @@ export class OnboardingController {
   async init() {
     try {
       const config = await getConfig();
+      this.currentConfig = config;
       this.bannerConfig = {
         header: config.templateHeaderAsset || '',
         footer: config.templateFooterAsset || ''
@@ -441,7 +442,8 @@ export class OnboardingController {
     const agendaUrl = customOverrides.agendaUrl || this.agendaUrl;
     const recipientEmail = customOverrides.recipientEmail || client?.correoContraparte || '';
     const phone = client?.telefonoContraparte || '';
-    const senderName = customOverrides.senderName || '';
+    const senderName = customOverrides.senderName || this.currentConfig?.coeName || '';
+    const senderEmail = customOverrides.senderEmail || this.currentConfig?.coeEmail || '';
     const dotacion = client?.dotacion ? `${client.dotacion}` : 'N/A';
     const recintos = client?.recintos ? `${client.recintos}` : '1';
     const urlBuk = client?.urlBuk || '';
@@ -496,7 +498,8 @@ export class OnboardingController {
       { regex: /\{\{\s*(?:nombre_cliente|contacto|contraparte|destinatario)\s*\}\}/gi, val: contactName },
       { regex: /\{\{\s*(?:agenda_url|link_agenda|url_agenda|agenda)\s*\}\}/gi, val: agendaUrl },
       { regex: /\{\{\s*(?:link_carpeta|link_grabaciones|carpeta_drive|carpeta|grabaciones|url_carpeta)\s*\}\}/gi, val: folderUrl },
-      { regex: /\{\{\s*(?:mi_nombre|remitente|asesor|ejecutivo|autor)\s*\}\}/gi, val: senderName },
+      { regex: /\{\{\s*(?:mi_nombre|remitente|asesor|ejecutivo|autor|coe)\s*\}\}/gi, val: senderName },
+      { regex: /\{\{\s*(?:mi_correo|correo_remitente|remitente_email)\s*\}\}/gi, val: senderEmail },
       { regex: /\{\{\s*(?:correo|email|correo_contraparte)\s*\}\}/gi, val: recipientEmail },
       { regex: /\{\{\s*(?:telefono|fono)\s*\}\}/gi, val: phone },
       { regex: /\{\{\s*(?:dotacion|colaboradores|usuarios)\s*\}\}/gi, val: dotacion },
@@ -896,7 +899,8 @@ export class OnboardingController {
         subject: resolved.subject,
         htmlBody: resolved.htmlBody,
         headerAsset: this.selectedTemplate?.headerAsset || config.templateHeaderAsset || this.bannerConfig?.header || '',
-        footerAsset: this.selectedTemplate?.footerAsset || config.templateFooterAsset || this.bannerConfig?.footer || ''
+        footerAsset: this.selectedTemplate?.footerAsset || config.templateFooterAsset || this.bannerConfig?.footer || '',
+        userEmail: config.coeEmail || ''
       });
 
       this.lastDraftCreated = res;

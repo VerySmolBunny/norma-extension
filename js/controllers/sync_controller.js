@@ -110,7 +110,8 @@ export async function handleSyncMeetings(state) {
       boardId: config.boardId,
       geminiApiKey: config.geminiApiKey,
       geminiModel: config.geminiModel || 'gemini-3.7-flash',
-      coeName: config.coeName
+      coeName: config.coeName,
+      userEmail: config.coeEmail || ''
     });
 
     const rawDrafts = data.drafts || [];

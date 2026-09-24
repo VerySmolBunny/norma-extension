@@ -5,6 +5,7 @@
 import { getConfig, saveConfig } from '../core/config.js';
 import { extractFolderId, extractFolderIds, showToast } from '../core/ui_helpers.js';
 import { firebaseService } from '../services/firebase_service.js';
+import { GasService } from '../services/gas_service.js';
 
 const ALL_SETTINGS_INPUT_IDS = [
   // Conexiones Principales & IA
@@ -12,6 +13,7 @@ const ALL_SETTINGS_INPUT_IDS = [
   'inputMondayApiKey',
   'inputMondayKey',
   'inputCoeName',
+  'inputCoeEmail',
   'inputBoardId',
   'inputGeminiApiKey',
   'selectGeminiModel',
@@ -220,6 +222,7 @@ export async function loadSavedSettings() {
   const inputGasUrl = document.getElementById('inputGasUrl');
   const inputMondayKey = document.getElementById('inputMondayApiKey') || document.getElementById('inputMondayKey');
   const inputCoeName = document.getElementById('inputCoeName');
+  const inputCoeEmail = document.getElementById('inputCoeEmail');
   const inputBoardId = document.getElementById('inputBoardId');
   const inputDriveFolderId = document.getElementById('inputRootDriveFolder') || document.getElementById('inputDriveFolderId');
   const inputMeetRecordingsId = document.getElementById('inputMeetRecordingsFolder') || document.getElementById('inputMeetRecordingsId');
@@ -230,12 +233,56 @@ export async function loadSavedSettings() {
   if (inputGasUrl) inputGasUrl.value = config.gasUrl || '';
   if (inputMondayKey) inputMondayKey.value = config.mondayApiKey || '';
   if (inputCoeName) inputCoeName.value = config.coeName || '';
+  if (inputCoeEmail) inputCoeEmail.value = config.coeEmail || '';
   if (inputBoardId) inputBoardId.value = config.boardId || '';
   if (inputDriveFolderId) inputDriveFolderId.value = config.rootDriveFolderId || '';
   if (inputMeetRecordingsId) inputMeetRecordingsId.value = config.meetRecordingsFolderId || '';
   if (inputSlidesKickoffTemplate) inputSlidesKickoffTemplate.value = config.slidesKickoffTemplateId || '';
   if (inputGeminiApiKey) inputGeminiApiKey.value = config.geminiApiKey || '';
   if (selectGeminiModel) selectGeminiModel.value = config.geminiModel || 'gemini-3.7-flash';
+
+  // Auto-detectar la cuenta Google de la sesión activa de Chrome con chrome.identity
+  if (typeof chrome !== 'undefined' && chrome.identity && chrome.identity.getProfileUserInfo) {
+    try {
+      chrome.identity.getProfileUserInfo({ accountStatus: 'ANY' }, (userInfo) => {
+        if (userInfo && userInfo.email) {
+          if (inputCoeEmail && !inputCoeEmail.value) {
+            inputCoeEmail.value = userInfo.email;
+            saveConfig({ coeEmail: userInfo.email }).catch(() => {});
+          }
+          const badge = document.getElementById('googleAccountBadge');
+          if (badge) {
+            badge.textContent = `👤 Sesión Chrome: ${userInfo.email}`;
+            badge.style.display = 'inline-block';
+          }
+        }
+      });
+    } catch (e) {
+      console.warn('Error obteniendo perfil de Chrome identity:', e);
+    }
+  }
+
+  // Verificar cuenta conectada en Google Apps Script
+  if (config.gasUrl) {
+    GasService.getConnectedAccount(config.gasUrl).then(accountInfo => {
+      const badge = document.getElementById('gasConnectedAccountBadge');
+      if (badge && accountInfo) {
+        if (accountInfo.activeUser) {
+          badge.innerHTML = `🟢 Google Apps Script ejecutando directamente como: <strong>${accountInfo.activeUser}</strong>`;
+          badge.style.display = 'block';
+          badge.style.borderColor = '#10b981';
+          badge.style.background = '#ecfdf5';
+          badge.style.color = '#065f46';
+        } else if (accountInfo.effectiveUser) {
+          badge.innerHTML = `⚠️ Google Apps Script ejecutando bajo la cuenta del creador: <strong>${accountInfo.effectiveUser}</strong>.<br><small style="font-size:11px;">Para que cada consultor use su propio correo/calendario automáticamente, la Web App debe desplegarse como "El usuario que accede a la aplicación web".</small>`;
+          badge.style.display = 'block';
+          badge.style.borderColor = '#f59e0b';
+          badge.style.background = '#fffbeb';
+          badge.style.color = '#92400e';
+        }
+      }
+    }).catch(() => {});
+  }
 
   // Mantener todos los campos bloqueados inicialmente
   setGlobalLock(true);
@@ -265,6 +312,7 @@ export async function handleSaveSettings() {
   const inputGasUrl = document.getElementById('inputGasUrl');
   const inputMondayKey = document.getElementById('inputMondayApiKey') || document.getElementById('inputMondayKey');
   const inputCoeName = document.getElementById('inputCoeName');
+  const inputCoeEmail = document.getElementById('inputCoeEmail');
   const inputBoardId = document.getElementById('inputBoardId');
   const inputDriveFolderId = document.getElementById('inputRootDriveFolder') || document.getElementById('inputDriveFolderId');
   const inputMeetRecordingsId = document.getElementById('inputMeetRecordingsFolder') || document.getElementById('inputMeetRecordingsId');
@@ -277,6 +325,7 @@ export async function handleSaveSettings() {
     gasUrl: inputGasUrl ? inputGasUrl.value.trim() : (currentConfig.gasUrl || ''),
     mondayApiKey: inputMondayKey ? inputMondayKey.value.trim() : (currentConfig.mondayApiKey || ''),
     coeName: inputCoeName ? inputCoeName.value.trim() : (currentConfig.coeName || ''),
+    coeEmail: inputCoeEmail ? inputCoeEmail.value.trim() : (currentConfig.coeEmail || ''),
     boardId: inputBoardId ? inputBoardId.value.trim() : (currentConfig.boardId || ''),
     rootDriveFolderId: inputDriveFolderId ? inputDriveFolderId.value.trim() : (currentConfig.rootDriveFolderId || ''),
     meetRecordingsFolderId: inputMeetRecordingsId ? inputMeetRecordingsId.value.trim() : (currentConfig.meetRecordingsFolderId || ''),

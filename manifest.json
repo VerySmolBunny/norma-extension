@@ -7,7 +7,9 @@
     "storage",
     "tabs",
     "activeTab",
-    "notifications"
+    "notifications",
+    "identity",
+    "identity.email"
   ],
   "host_permissions": [
     "https://api.monday.com/*",
