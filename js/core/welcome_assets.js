@@ -49,7 +49,7 @@ export const DEFAULT_WELCOME_TEMPLATE_HTML = `
     </p>
 
     <p style="margin-bottom: 24px;">
-      Quedo atenta y disponible para ayudarte.
+      Quedo a tu disposición para ayudarte.
     </p>
 
     <div style="border-top: 1px solid #f1f5f9; padding-top: 16px; margin-top: 24px;">

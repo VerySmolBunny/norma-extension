@@ -14,6 +14,7 @@ const ALL_SETTINGS_INPUT_IDS = [
   'inputMondayKey',
   'inputCoeName',
   'inputCoeEmail',
+  'inputAgendaUrl',
   'inputBoardId',
   'inputGeminiApiKey',
   'selectGeminiModel',
@@ -223,6 +224,7 @@ export async function loadSavedSettings() {
   const inputMondayKey = document.getElementById('inputMondayApiKey') || document.getElementById('inputMondayKey');
   const inputCoeName = document.getElementById('inputCoeName');
   const inputCoeEmail = document.getElementById('inputCoeEmail');
+  const inputAgendaUrl = document.getElementById('inputAgendaUrl');
   const inputBoardId = document.getElementById('inputBoardId');
   const inputDriveFolderId = document.getElementById('inputRootDriveFolder') || document.getElementById('inputDriveFolderId');
   const inputMeetRecordingsId = document.getElementById('inputMeetRecordingsFolder') || document.getElementById('inputMeetRecordingsId');
@@ -234,6 +236,7 @@ export async function loadSavedSettings() {
   if (inputMondayKey) inputMondayKey.value = config.mondayApiKey || '';
   if (inputCoeName) inputCoeName.value = config.coeName || '';
   if (inputCoeEmail) inputCoeEmail.value = config.coeEmail || '';
+  if (inputAgendaUrl) inputAgendaUrl.value = config.agendaUrl || '';
   if (inputBoardId) inputBoardId.value = config.boardId || '';
   if (inputDriveFolderId) inputDriveFolderId.value = config.rootDriveFolderId || '';
   if (inputMeetRecordingsId) inputMeetRecordingsId.value = config.meetRecordingsFolderId || '';
@@ -297,8 +300,8 @@ export async function loadSavedSettings() {
 
     if (inputFbProjectId) inputFbProjectId.value = fbConfig.projectId || '';
     if (inputFbApiKey) inputFbApiKey.value = fbConfig.apiKey || '';
-    if (inputFbCurrentUser) inputFbCurrentUser.value = fbConfig.currentUserEmail || '';
-    if (inputFbSenderName) inputFbSenderName.value = fbConfig.senderName || '';
+    if (inputFbCurrentUser) inputFbCurrentUser.value = fbConfig.currentUserEmail || config.coeEmail || '';
+    if (inputFbSenderName) inputFbSenderName.value = fbConfig.senderName || config.coeName || '';
   } catch (err) {
     console.warn('Error al cargar config de Firebase:', err);
   }
@@ -313,6 +316,7 @@ export async function handleSaveSettings() {
   const inputMondayKey = document.getElementById('inputMondayApiKey') || document.getElementById('inputMondayKey');
   const inputCoeName = document.getElementById('inputCoeName');
   const inputCoeEmail = document.getElementById('inputCoeEmail');
+  const inputAgendaUrl = document.getElementById('inputAgendaUrl');
   const inputBoardId = document.getElementById('inputBoardId');
   const inputDriveFolderId = document.getElementById('inputRootDriveFolder') || document.getElementById('inputDriveFolderId');
   const inputMeetRecordingsId = document.getElementById('inputMeetRecordingsFolder') || document.getElementById('inputMeetRecordingsId');
@@ -326,6 +330,7 @@ export async function handleSaveSettings() {
     mondayApiKey: inputMondayKey ? inputMondayKey.value.trim() : (currentConfig.mondayApiKey || ''),
     coeName: inputCoeName ? inputCoeName.value.trim() : (currentConfig.coeName || ''),
     coeEmail: inputCoeEmail ? inputCoeEmail.value.trim() : (currentConfig.coeEmail || ''),
+    agendaUrl: inputAgendaUrl ? inputAgendaUrl.value.trim() : (currentConfig.agendaUrl || ''),
     boardId: inputBoardId ? inputBoardId.value.trim() : (currentConfig.boardId || ''),
     rootDriveFolderId: inputDriveFolderId ? inputDriveFolderId.value.trim() : (currentConfig.rootDriveFolderId || ''),
     meetRecordingsFolderId: inputMeetRecordingsId ? inputMeetRecordingsId.value.trim() : (currentConfig.meetRecordingsFolderId || ''),

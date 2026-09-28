@@ -1,7 +1,7 @@
 /**
  * Content Script inyectado en Gmail (https://mail.google.com/*)
  * Detecta ventanas de redacción, inyecta el botón corporativo,
- * vincula clientes automáticamente desde Monday.com (Tablero: 1400120846)
+ * vincula clientes automáticamente desde Monday.com
  * y autocompleta variables dinámicas en las plantillas.
  */
 
@@ -296,7 +296,7 @@
                 <div class="ext-cor-monday-info">
                     <span class="monday-badge-icon">📊</span>
                     <div class="monday-text-group">
-                        <span class="monday-main-label" id="mondayClientLabel">Buscando cliente en Monday.com (Tablero 1400120846)...</span>
+                        <span class="monday-main-label" id="mondayClientLabel">Buscando cliente en Monday.com...</span>
                         <span class="monday-sub-label" id="mondayClientSubLabel"></span>
                     </div>
                 </div>
@@ -305,7 +305,7 @@
 
             <!-- Selector desplegable de clientes de Monday -->
             <div class="ext-cor-client-picker" id="extCorClientPicker" style="display: none;">
-                <input type="text" id="mondaySearchClientInput" placeholder="🔍 Buscar cliente en Monday (Tablero 1400120846)..." class="ext-cor-monday-search">
+                <input type="text" id="mondaySearchClientInput" placeholder="🔍 Buscar cliente en Monday.com..." class="ext-cor-monday-search">
                 <div class="ext-cor-client-results" id="mondayClientResults"></div>
             </div>
 
@@ -322,7 +322,7 @@
                     <div class="filler-monday-header">
                         <div class="filler-monday-label">
                             <span style="font-size: 15px;">🏢</span>
-                            <strong>Cliente / Empresa de Monday.com (Tablero 1400120846):</strong>
+                            <strong>Cliente / Empresa de Monday.com:</strong>
                         </div>
                         <div style="display: flex; align-items: center; gap: 8px;">
                             <span class="filler-monday-hint" id="fillerMondayHint">Busca y selecciona para autocompletar</span>
@@ -398,7 +398,7 @@
                     fillerMondayHint.textContent = done ? `${count} clientes listos` : `Cargando: ${count} clientes...`;
                 }
                 if (!activeMondayClient && !recipientQuery && mondayClientLabel) {
-                    mondayClientLabel.textContent = `Tablero Monday (1400120846) • ${count} clientes`;
+                    mondayClientLabel.textContent = `Cartera Monday • ${count} clientes`;
                 }
             };
 
@@ -415,11 +415,11 @@
                     if (matched) {
                         setMatchedMondayClient(matched);
                     } else {
-                        mondayClientLabel.textContent = `Tablero Monday (1400120846) • ${cachedClients.length} clientes`;
+                        mondayClientLabel.textContent = `Cartera Monday • ${cachedClients.length} clientes`;
                         mondayClientSubLabel.textContent = `No se detectó "${recipientQuery}". Puedes buscarlo en la plantilla.`;
                     }
                 } else {
-                    mondayClientLabel.textContent = `Tablero Monday (1400120846) • ${cachedClients.length} clientes`;
+                    mondayClientLabel.textContent = `Cartera Monday • ${cachedClients.length} clientes`;
                     mondayClientSubLabel.textContent = 'Busca una empresa o cliente para autocompletar variables';
                 }
             } else {
@@ -433,7 +433,7 @@
             activeMondayClient = client;
             mondayClientLabel.innerHTML = `✨ Cliente: <strong>${escapeHtml(client.contacto || client.name || client.empresa)}</strong>`;
             const extra = [client.empresa, client.email, client.telefono].filter(Boolean).join(' • ');
-            mondayClientSubLabel.textContent = extra || 'Datos sincronizados desde tablero 1400120846';
+            mondayClientSubLabel.textContent = extra || 'Datos sincronizados desde Monday.com';
             selectMondayClientBtn.textContent = 'Cambiar';
             clientPicker.style.display = 'none';
         }
@@ -459,7 +459,7 @@
             mondayClientResults.innerHTML = '';
 
             if (results.length === 0) {
-                mondayClientResults.innerHTML = '<div style="padding: 10px; color: #64748b; font-size: 12px;">No se encontraron clientes en el tablero 1400120846</div>';
+                mondayClientResults.innerHTML = '<div style="padding: 10px; color: #64748b; font-size: 12px;">No se encontraron clientes en el tablero</div>';
                 return;
             }
 

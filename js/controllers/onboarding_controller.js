@@ -35,6 +35,7 @@ export class OnboardingController {
     try {
       const config = await getConfig();
       this.currentConfig = config;
+      this.agendaUrl = config.agendaUrl || '';
       this.bannerConfig = {
         header: config.templateHeaderAsset || '',
         footer: config.templateFooterAsset || ''
@@ -260,6 +261,8 @@ export class OnboardingController {
 
     try {
       const config = await getConfig();
+      this.currentConfig = config;
+      if (config.agendaUrl) this.agendaUrl = config.agendaUrl;
       let koClients = [];
 
       // 1. Intentar consultar Monday directamente vía GraphQL

@@ -68,18 +68,22 @@ Una vez instalada la extensión, abre el Dashboard o Sidepanel y haz clic en el 
    - En Monday.com: Haz clic en tu foto de perfil > *Desarrolladores (Developers)* > *Mi Token de API*.
    - Pega tu token personal en el campo correspondiente.
 
-3. **ID de Tablero de Monday.com:**
+3. **Correo Corporativo y Enlace de Agendamiento:**
+   - **Correo de Google Workspace:** Escribe tu dirección de correo de trabajo.
+   - **Enlace de Agendamiento Personal:** Pega tu enlace de reserva de reuniones (Google Calendar "Páginas de citas", Calendly o Cal.com). La extensión lo insertará automáticamente en los correos de bienvenida (Kick Off).
+
+4. **ID de Tablero de Monday.com:**
    - Ingresa el ID numérico del tablero Master de Clientes (por defecto viene preconfigurado con el tablero general).
 
-4. **API Key de Gemini (Google AI Studio):**
+5. **API Key de Gemini (Google AI Studio):**
    - Obtén una clave gratuita en [Google AI Studio](https://aistudio.google.com/).
    - Pégala para habilitar el asistente conversacional (Norma AI) y la redacción automática de minutas ejecutivas.
 
-5. **Carpetas de Google Drive:**
+6. **Carpetas de Google Drive:**
    - **Carpeta Raíz de Clientes:** Pega el link o ID de la carpeta en Google Drive donde guardas o gestionas las subcarpetas de tus clientes.
    - **Carpetas de Grabaciones de Google Meet:** Pega el link o ID de tu carpeta de grabaciones de Meet.
 
-6. **Web App de Google Apps Script (Sincronización de Calendar y Drive):**
+7. **Web App de Google Apps Script (Sincronización de Calendar y Drive):**
    - Cada consultor debe tener su propia instancia de Apps Script para que Calendar y Drive lean sus propios eventos y archivos:
      1. Entra a [script.google.com](https://script.google.com) con tu cuenta corporativa de Google.
      2. Crea un nuevo proyecto y pega el contenido de `google_apps_script/Code.gs`.

@@ -1,7 +1,7 @@
 /**
- * Norma Hub - Consultor Inteligente de Monday.com con IA (Gemini 3.7 Flash)
+ * Norma Hub - Consultor Inteligente de Monday.com con IA
  * Permite realizar consultas en lenguaje natural a la cartera de clientes,
- * alimentándose en vivo de todas las columnas del tablero Master (1400120846),
+ * alimentándose en vivo de todas las columnas del tablero de Monday.com,
  * métricas de atraso y calendario con razonamiento profundo.
  */
 
@@ -287,7 +287,9 @@ export class MondayChatService {
    * Consulta a Google Gemini 3.7 Flash con razonamiento profundo y fallback automático
    */
   static async queryWithGemini(prompt, clients, history, apiKey, preferredModel = 'gemini-3.7-flash') {
+    const config = await getConfig();
     const todayStr = new Date().toISOString().split('T')[0];
+    const boardId = config.boardId || 'Tablero de Clientes';
 
     // Resumen enriquecido y estructurado de los clientes
     const clientsContext = clients.map(c => ({
@@ -334,7 +336,7 @@ export class MondayChatService {
     const systemPrompt = `Eres Norma, la Asistente Experta de Operaciones y Consultora de Inteligencia Artificial de Monday.com para ${coeDisplayName}.
 
 HOY ES: ${todayStr}
-TABLERO MONDAY CONECTADO: Master de Clientes Asistencia - Chile (ID: 1400120846)
+TABLERO MONDAY CONECTADO: Cartera de Clientes (ID: ${boardId})
 TOTAL CLIENTES ANALIZADOS: ${clients.length}
 
 BASE DE DATOS EN TIEMPO REAL DE MONDAY.COM Y CALENDAR:
@@ -360,7 +362,7 @@ DIRECTRICES ESTRICTAS DE RESPUESTA:
       },
       {
         role: 'model',
-        parts: [{ text: 'Entendido. Estoy conectado a tu tablero de Monday.com (1400120846) con Gemini 3.7 Flash y razonamiento avanzado. ¿Qué necesitas consultar sobre tu cartera de clientes?' }]
+        parts: [{ text: `Entendido. Estoy conectada a tu tablero de Monday.com (${boardId}) con ${preferredModel} y razonamiento avanzado. ¿Qué necesitas consultar sobre tu cartera de clientes?` }]
       }
     ];
 
@@ -556,13 +558,13 @@ DIRECTRICES ESTRICTAS DE RESPUESTA:
 
     // 6. RESPUESTA POR DEFECTO / GUÍA
     let resp = `### 🤖 Hola, soy tu Consultor de Monday.com\n\n`;
-    resp += `Tengo cargados **${clients.length} clientes** de tu tablero Master (*1400120846*). Puedes hacerme preguntas como:\n\n`;
+    resp += `Tengo cargados **${clients.length} clientes** de tu cartera de Monday.com. Puedes hacerme preguntas como:\n\n`;
     resp += `- *"¿Qué clientes no tienen reunión agendada próximamente?"*\n`;
     resp += `- *"¿Cuáles son los clientes en estado Atrasado o Al Límite?"*\n`;
     resp += `- *"Dame el resumen de clientes por etapa"*\n`;
     resp += `- *"¿Quién es la contraparte y datos de contacto de un cliente?"*\n`;
     resp += `- *"Muestra los clientes con mayor dotación o turnos rotativos"*\n\n`;
-    resp += `💡 *Tip: Si configuras tu Gemini API Key en Ajustes (⚙️), funcionaré con el potente modelo Gemini 3.7 Flash y razonamiento avanzado.*`;
+    resp += `💡 *Tip: Si configuras tu Gemini API Key en Ajustes (⚙️), funcionaré con el potente modelo Gemini y razonamiento avanzado.*`;
     return resp;
   }
 }

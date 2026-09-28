@@ -6,6 +6,7 @@ export const DEFAULT_CONFIG = {
   mondayApiKey: '',
   boardId: '1400120846',
   gasUrl: '',
+  agendaUrl: '',
   rootDriveFolderId: '',
   meetRecordingsFolderId: '',
   slidesKickoffTemplateId: '',

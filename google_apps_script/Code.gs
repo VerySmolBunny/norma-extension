@@ -5,8 +5,9 @@
 
 const CONFIG = {
   MONDAY_API_KEY: '', // Se recibe dinámicamente desde la extensión o definir aquí para pruebas
-  BOARD_ID: 1400120846, // Master de Clientes Asistencia
-  COE_NAME: '', // Nombre del Consultor/COE en Monday (ej. 'Constanza Diaz Contreras')
+  BOARD_ID: 1400120846, // ID del Tablero de Clientes en Monday.com
+  COE_NAME: '', // Nombre del Consultor/COE en Monday (ej. 'Tu Nombre Completo')
+  AGENDA_URL: '', // Enlace de agendamiento de reuniones (Google Calendar / Calendly)
   ROOT_CLIENTS_FOLDER_ID: '', // ID o URL de la carpeta raíz de clientes en Google Drive
   MEET_RECORDINGS_FOLDER_ID: '', // ID o URL de la carpeta de grabaciones de Google Meet
   SLIDES_KICKOFF_TEMPLATE_ID: '', // ID o URL de la plantilla maestra de Google Slides
@@ -467,17 +468,19 @@ function handleRequest(params) {
 
       // 7. Crear Borrador de Correo de Bienvenida en Gmail
       case 'create_welcome_draft': {
-        const clientName = params.client_name || '';
+        const clientName = params.client_name || params.clientName || '';
         const recipient = params.recipient || '';
-        const agendaUrl = params.agenda_url || 'https://calendar.app.google/pB82UFn8EE2AsXi19';
-        const customHtml = params.html_body || '';
+        const agendaUrl = params.agenda_url || params.agendaUrl || CONFIG.AGENDA_URL || '';
+        const customHtml = params.html_body || params.htmlBody || '';
         const customSubject = params.subject || '';
-        const headerAsset = params.header_asset || '';
-        const footerAsset = params.footer_asset || '';
+        const headerAsset = params.header_asset || params.headerAsset || '';
+        const footerAsset = params.footer_asset || params.footerAsset || '';
+        const coeName = params.coe_name || params.coeName || CONFIG.COE_NAME || '';
 
         const draftResult = createWelcomeGmailDraft(clientName, recipient, agendaUrl, customHtml, customSubject, {
           headerAsset: headerAsset,
-          footerAsset: footerAsset
+          footerAsset: footerAsset,
+          coeName: coeName
         });
         responseData = {
           status: 'success',
@@ -564,17 +567,20 @@ function handleRequest(params) {
 
       // 9. Automatización Integral de Onboarding (1-Clic - 4 Pasos)
       case 'onboard_client': {
-        const clientName = params.client_name || '';
-        const clientId = params.client_id || '';
+        const clientName = params.client_name || params.clientName || '';
+        const clientId = params.client_id || params.clientId || '';
         const recipient = params.recipient || '';
-        const agendaUrl = params.agenda_url || 'https://calendar.app.google/pB82UFn8EE2AsXi19';
+        const agendaUrl = params.agenda_url || params.agendaUrl || CONFIG.AGENDA_URL || '';
         const slidesTemplateId = params.slides_template_id || params.template_id || CONFIG.SLIDES_KICKOFF_TEMPLATE_ID;
         const createFolder = params.create_folder !== 'false' && params.create_folder !== false;
         const createSlides = params.create_slides !== 'false' && params.create_slides !== false;
         const updateMonday = params.update_monday !== 'false' && params.update_monday !== false;
         const createDraft = params.create_draft !== 'false' && params.create_draft !== false;
-        const customHtml = params.html_body || '';
+        const customHtml = params.html_body || params.htmlBody || '';
         const customSubject = params.subject || '';
+        const headerAsset = params.header_asset || params.headerAsset || '';
+        const footerAsset = params.footer_asset || params.footerAsset || '';
+        const coeName = params.coe_name || params.coeName || CONFIG.COE_NAME || '';
 
         const result = executeClientOnboarding({
           clientName,
@@ -591,6 +597,9 @@ function handleRequest(params) {
           createDraft,
           customHtml,
           customSubject,
+          headerAsset,
+          footerAsset,
+          coeName,
           urlBuk: params.url_buk || '',
           dotacion: params.dotacion || '',
           recintos: params.recintos || '',
@@ -1227,8 +1236,8 @@ function generateDraftsForDate(targetDate, startTimeStr, endTimeStr, mondayApiKe
     const evStartFormatted = Utilities.formatDate(evStart, tz, 'HH:mm');
     const evEndFormatted = Utilities.formatDate(evEnd, tz, 'HH:mm');
 
-    const isIgnored = isInternalOrIgnored(title, attendees);
-    const matchedClient = matchClient(title, attendees, description, clients);
+    const isIgnored = isInternalOrIgnored(title, attendees, userEmail);
+    const matchedClient = matchClient(title, attendees, description, clients, userEmail);
 
     debug.eventsList.push({
       title: title,
@@ -1252,7 +1261,7 @@ function generateDraftsForDate(targetDate, startTimeStr, endTimeStr, mondayApiKe
     let nextMeetingCard = null;
     const nextEvent = findNextMeetingForClient(matchedClient, new Date(), userEmail);
     if (nextEvent) {
-      nextMeetingCard = buildNextMeetingCard(dateFormatted, nextEvent);
+      nextMeetingCard = buildNextMeetingCard(dateFormatted, nextEvent, userEmail);
     }
 
     drafts.push({
@@ -1411,8 +1420,17 @@ function generateMinutaWithGemini(docText, rawDescription, meetingType, clientNa
   if (!apiKey) return null;
   try {
     let prompt = '';
-    const coeLabel = (coeName || '').trim();
+    const coeLabel = (coeName || CONFIG.COE_NAME || '').trim();
     const coeRef = coeLabel ? `"${coeLabel}"` : 'el/la Consultor/a';
+    const coeAliases = [];
+    if (coeLabel) {
+      coeAliases.push(`"${coeLabel}"`);
+      const parts = coeLabel.split(/\s+/).filter(p => p.length > 2);
+      parts.forEach(p => {
+        if (!coeAliases.includes(`"${p}"`)) coeAliases.push(`"${p}"`);
+      });
+    }
+    const replaceList = coeAliases.length > 0 ? coeAliases.join(', ') + ', ' : '';
 
     if (meetingType === 'Kick Off') {
       prompt = `Eres el asistente de operaciones de Buk para el/la Consultor/a COE (identificado/a estrictamente como "la COE").
@@ -1432,7 +1450,7 @@ ${dateFormatted}
 
 2. Una vez que las notas estén reestructuradas según el punto anterior, realiza los siguientes reemplazos en todo el texto resultante:
 
-- Reemplaza todas las instancias de ${coeLabel ? `"${coeLabel}", ` : ''}"Constanza Diaz", "Constanza Díaz", "Cony" por "la COE".
+- Reemplaza todas las instancias de ${replaceList}"el/la Consultor/a", "Consultor/a", "PM" por "la COE".
 - Reemplaza todas las instancias de "Book" (cuando se refiere al software o módulo) por "Buk".
 
 REGLAS OBLIGATORIAS:
@@ -1456,7 +1474,7 @@ ${dateFormatted}
 
 2. Una vez que las notas estén reestructuradas según el punto anterior, realiza los siguientes reemplazos en todo el texto resultante:
 
-- Reemplaza todas las instancias de ${coeLabel ? `"${coeLabel}", ` : ''}"Constanza Diaz", "Constanza Díaz", "Cony" por "la COE".
+- Reemplaza todas las instancias de ${replaceList}"el/la Consultor/a", "Consultor/a", "PM" por "la COE".
 - Reemplaza todas las instancias de "Book" (cuando se refiere al software o módulo) por "Buk".
 
 REGLAS OBLIGATORIAS:
@@ -1540,7 +1558,7 @@ function parseAndFormatManualStyle(docText, rawDescription, meetingType, client,
   const narrativeLines = [];
   let fechaProxima = '';
 
-  const coeLower = (coeName || '').toLowerCase().trim();
+  const coeLower = (coeName || CONFIG.COE_NAME || '').toLowerCase().trim();
   const coeFirst = coeLower ? coeLower.split(' ')[0] : '';
 
   for (let i = 0; i < lines.length; i++) {
@@ -1559,7 +1577,7 @@ function parseAndFormatManualStyle(docText, rawDescription, meetingType, client,
       const taskDesc = (taskMatch[3] ? `${taskMatch[2].trim() ? taskMatch[2].trim() + ': ' : ''}${taskMatch[3].trim()}` : taskMatch[2] ? taskMatch[2].trim() : '').trim();
       const personLower = person.toLowerCase();
 
-      const isCoe = (coeFirst && personLower.includes(coeFirst)) || (coeLower && personLower.includes(coeLower)) || personLower.includes('constanza') || personLower.includes('cony') || personLower.includes('coe') || personLower.includes('pm');
+      const isCoe = (coeFirst && personLower.includes(coeFirst)) || (coeLower && personLower.includes(coeLower)) || personLower.includes('coe') || personLower.includes('pm') || personLower.includes('consultor') || personLower.includes('implementador');
       if (isCoe) {
         pmTasks.push(`- la COE: ${taskDesc}`);
       } else {
@@ -1575,7 +1593,7 @@ function parseAndFormatManualStyle(docText, rawDescription, meetingType, client,
       const taskDesc = manualTaskMatch[2].trim();
       const personLower = person.toLowerCase();
 
-      const isCoe = (coeFirst && personLower.includes(coeFirst)) || (coeLower && personLower.includes(coeLower)) || personLower.includes('constanza') || personLower.includes('cony') || personLower.includes('coe');
+      const isCoe = (coeFirst && personLower.includes(coeFirst)) || (coeLower && personLower.includes(coeLower)) || personLower.includes('coe') || personLower.includes('pm') || personLower.includes('consultor') || personLower.includes('implementador');
       if (isCoe) {
         pmTasks.push(`- la COE: ${taskDesc}`);
       } else if (personLower.includes('cliente') || personLower.includes('contraparte') || person.length > 2) {
@@ -1645,7 +1663,7 @@ function cleanDocText(text) {
     .trim();
 }
 
-function buildNextMeetingCard(datePrefix, nextEvent) {
+function buildNextMeetingCard(datePrefix, nextEvent, userEmail) {
   const title = nextEvent.getTitle();
   const startTime = nextEvent.getStartTime();
   const endTime = nextEvent.getEndTime();
@@ -1662,7 +1680,13 @@ function buildNextMeetingCard(datePrefix, nextEvent) {
   const horaInicio = Utilities.formatDate(startTime, Session.getScriptTimeZone(), 'HH:mm');
   const horaFin = Utilities.formatDate(endTime, Session.getScriptTimeZone(), 'HH:mm');
 
-  const guests = nextEvent.getGuestList().map(g => g.getEmail()).filter(e => !e.includes('buk.cl')).join(', ');
+  const userDomain = (userEmail && userEmail.includes('@')) ? userEmail.split('@')[1].toLowerCase() : 'buk.cl';
+  const guests = nextEvent.getGuestList().map(g => g.getEmail()).filter(e => {
+    const el = e.toLowerCase();
+    if (el.includes('buk.cl')) return false;
+    if (userDomain && el.includes('@' + userDomain)) return false;
+    return true;
+  }).join(', ');
 
   let card = `${datePrefix} | 📆 Próxima Sesión Agendada en Google Calendar\n\n`;
   card += `📌 Evento: ${title}\n`;
@@ -1677,20 +1701,24 @@ function buildNextMeetingCard(datePrefix, nextEvent) {
 
 function applyStandardReplacements(text, coeName) {
   if (!text) return '';
-  let result = text
-    .replace(/Constanza D[ií]az/gi, 'la COE')
-    .replace(/\bBook\b/gi, 'Buk');
+  let result = text.replace(/\bBook\b/gi, 'Buk');
 
-  if (coeName && coeName.trim()) {
+  const targetName = (coeName || CONFIG.COE_NAME || '').trim();
+  if (targetName) {
     try {
-      const escaped = coeName.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const escaped = targetName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       result = result.replace(new RegExp(escaped, 'gi'), 'la COE');
+      const parts = targetName.split(/\s+/).filter(p => p.length > 2);
+      parts.forEach(part => {
+        const escapedPart = part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        result = result.replace(new RegExp('\\b' + escapedPart + '\\b', 'gi'), 'la COE');
+      });
     } catch (e) {}
   }
   return result;
 }
 
-function matchClient(eventTitle, attendees, description, clients) {
+function matchClient(eventTitle, attendees, description, clients, userEmail) {
   const cleanTitle = eventTitle.toLowerCase();
   for (const c of clients) {
     const cName = c.name.toLowerCase();
@@ -1698,8 +1726,10 @@ function matchClient(eventTitle, attendees, description, clients) {
     if ((cName.length >= 3 && cleanTitle.includes(cName)) || (cNameClean.length >= 3 && cleanTitle.replace(/[^a-z0-9]/g, '').includes(cNameClean))) return c;
     if (c.contraparte && c.contraparte.length > 3 && cleanTitle.includes(c.contraparte.toLowerCase())) return c;
   }
+  const userDomain = (userEmail && userEmail.includes('@')) ? userEmail.split('@')[1].toLowerCase() : 'buk.cl';
   for (const email of attendees) {
     if (email.includes('buk.cl')) continue;
+    if (userDomain && email.includes('@' + userDomain)) continue;
     const domain = email.split('@')[1]?.split('.')[0];
     for (const c of clients) {
       if (c.correoContraparte && c.correoContraparte.toLowerCase() === email) return c;
@@ -1754,10 +1784,16 @@ function isKickOffMeeting(title, text) {
   return t.includes('kick off') || t.includes('kickoff') || t.includes(' ko ') || t.startsWith('ko');
 }
 
-function isInternalOrIgnored(title, attendees) {
+function isInternalOrIgnored(title, attendees, userEmail) {
   const t = title.toLowerCase();
   if (t.includes('almuerzo') || t.includes('1:1') || t.includes('daily') || t.includes('sync coe') || t.includes('planning') || t.includes('capacitación interna')) return true;
-  const external = attendees.filter(e => !e.includes('buk.cl'));
+  const userDomain = (userEmail && userEmail.includes('@')) ? userEmail.split('@')[1].toLowerCase() : 'buk.cl';
+  const external = attendees.filter(e => {
+    const el = e.toLowerCase();
+    if (el.includes('buk.cl')) return false;
+    if (userDomain && el.includes('@' + userDomain)) return false;
+    return true;
+  });
   if (external.length === 0 && !t.includes('cliente') && !t.includes('ko') && !t.includes('seguimiento')) return true;
   return false;
 }
@@ -1861,9 +1897,14 @@ function getClientsFromMonday(apiKey, boardId, startDate, endDate, excludeFinish
   });
 }
 
+/** Alias principal */
+function getCoeClientsFromMonday(apiKey, boardId, startDate, endDate, excludeFinished, coeName) {
+  return getClientsFromMonday(apiKey, boardId, startDate, endDate, excludeFinished, coeName);
+}
+
 /** Alias de compatibilidad hacia atrás */
 function getConyClientsFromMonday(apiKey, boardId, startDate, endDate, excludeFinished, coeName) {
-  return getClientsFromMonday(apiKey, boardId, startDate, endDate, excludeFinished, coeName);
+  return getCoeClientsFromMonday(apiKey, boardId, startDate, endDate, excludeFinished, coeName);
 }
 
 function callMondayAPI(query, apiKey) {
@@ -1976,9 +2017,10 @@ function getKOPendingClientsFromMonday(apiKey, boardId, customCoeName) {
  * Usa entidades HTML estándar (&#128153;, &#128522;, &#128073;, &#128640;) para garantizar
  * que los emojis se vean perfectos a todo color en cualquier cliente de correo sin problemas de encoding.
  */
-function buildWelcomeEmailHtml(clientName, agendaUrl) {
-  const url = agendaUrl || 'https://calendar.app.google/pB82UFn8EE2AsXi19';
+function buildWelcomeEmailHtml(clientName, agendaUrl, coeName) {
+  const url = agendaUrl || CONFIG.AGENDA_URL || '';
   const cleanClientName = clientName ? clientName.trim() : 'Equipo';
+  const senderName = coeName || CONFIG.COE_NAME || 'tu Consultor/a de Implementación';
 
   return `<!DOCTYPE html>
 <html>
@@ -2012,7 +2054,7 @@ function buildWelcomeEmailHtml(clientName, agendaUrl) {
     <div class="email-body">
       <div class="greeting">&#161;Hola equipo ${cleanClientName}! &#128522;</div>
 
-      <p>Mi nombre es <strong>Cony</strong> y ser&eacute; qui&eacute;n les acompa&ntilde;e en esta etapa de implementaci&oacute;n de nuestro m&oacute;dulo <strong>Control de Asistencia</strong>.</p>
+      <p>Mi nombre es <strong>${senderName}</strong> y ser&eacute; qui&eacute;n les acompa&ntilde;e en esta etapa de implementaci&oacute;n de nuestro m&oacute;dulo <strong>Control de Asistencia</strong>.</p>
 
       <p>Como primer paso, realizaremos nuestra reuni&oacute;n "kick off", la cual consiste en una instancia virtual para conocernos y revisar los puntos necesarios para comenzar el proceso de implementaci&oacute;n.</p>
 
@@ -2024,7 +2066,7 @@ function buildWelcomeEmailHtml(clientName, agendaUrl) {
 
       <p>En caso de que no puedas asistir a la reuni&oacute;n programada, com&eacute;ntamelo y as&iacute; podremos agendar una nueva fecha.</p>
 
-      <p style="margin-top: 24px;">Quedo atenta y disponible para ayudarte.</p>
+      <p style="margin-top: 24px;">Quedo a tu disposición para ayudarte.</p>
 
       <div class="footer-section">
         <p style="margin: 0 0 4px 0;">Saludos,</p>
@@ -2063,7 +2105,7 @@ function createWelcomeGmailDraft(clientName, recipient, agendaUrl, customHtml, c
 
   let htmlBody = customHtml;
   if (!htmlBody || !htmlBody.trim()) {
-    htmlBody = buildWelcomeEmailHtml(cleanClient, agendaUrl);
+    htmlBody = buildWelcomeEmailHtml(cleanClient, agendaUrl, bannerOptions.coeName);
   }
 
   const inlineImages = {};
@@ -2198,11 +2240,11 @@ function createWelcomeGmailDraft(clientName, recipient, agendaUrl, customHtml, c
   });
 
   const plainTextBody = `¡Hola equipo ${cleanClient}! 😊\n\n` +
-    `Mi nombre es Cony y seré quién les acompañe en esta etapa de implementación de nuestro módulo Control de Asistencia.\n\n` +
+    `Mi nombre es ${bannerOptions.coeName || CONFIG.COE_NAME || 'tu Consultor/a de Implementación'} y seré quién les acompañe en esta etapa de implementación de nuestro módulo Control de Asistencia.\n\n` +
     `Como primer paso, realizaremos nuestra reunión "kick off", la cual consiste en una instancia virtual para conocernos y revisar los puntos necesarios para comenzar el proceso de implementación.\n\n` +
-    `👉 Puedes hacer click aqui para agendar tu primera sesión:\n${agendaUrl || 'https://calendar.app.google/pB82UFn8EE2AsXi19'}\n\n` +
+    `👉 Puedes hacer click aqui para agendar tu primera sesión:\n${agendaUrl || CONFIG.AGENDA_URL || ''}\n\n` +
     `En caso de que no puedas asistir a la reunión programada, coméntamelo y así podremos agendar una nueva fecha.\n\n` +
-    `Quedo atenta y disponible para ayudarte.\n\n` +
+    `Quedo a tu disposición para ayudarte.\n\n` +
     `Saludos,\nTu experiencia con Buk`;
 
   const options = {
@@ -2534,8 +2576,9 @@ function executeClientOnboarding(options) {
   if (createDraft) {
     try {
       const draftRes = createWelcomeGmailDraft(clientName, recipient, agendaUrl, customHtml, customSubject, {
-        headerAsset: params.header_asset || params.templateHeaderAsset || '',
-        footerAsset: params.footer_asset || params.templateFooterAsset || ''
+        headerAsset: options.headerAsset || options.templateHeaderAsset || '',
+        footerAsset: options.footerAsset || options.templateFooterAsset || '',
+        coeName: options.coeName || ''
       });
       results.steps.gmail = {
         success: true,

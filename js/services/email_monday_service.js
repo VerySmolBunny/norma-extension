@@ -1,6 +1,6 @@
 /**
  * Servicio de Integración con la API GraphQL de Monday.com (v2)
- * Conexión exclusiva con el Tablero de Clientes (Board ID: 1400120846)
+ * Conexión con el Tablero de Clientes de Monday.com
  * y Gestión de Mapeo de Variables Dinámicas Personalizadas.
  */
 
@@ -8,7 +8,7 @@ import { DriveFolderService, normalizeDriveClientName } from './drive_folder_ser
 
 const DEFAULT_MONDAY_CONFIG = {
     apiToken: '', // Token de API personal de Monday.com
-    boardId: '1400120846' // ID exclusivo del tablero de clientes
+    boardId: '1400120846' // ID del tablero de clientes
 };
 
 const DEFAULT_VARIABLE_DEFINITIONS = [
@@ -92,7 +92,7 @@ class MondayService {
         this.cacheKey = 'ext_correo_monday_clients_cache_v3';
         this.columnsCacheKey = 'ext_correo_monday_columns_cache_v3';
         this.variablesKey = 'ext_correo_variable_definitions';
-        this.boardId = '1400120846'; // Tablero exclusivo garantizado
+        this.boardId = '1400120846'; // Tablero de clientes por defecto
         this._memoryClients = null;
         this._isSyncing = false;
         this._syncPromise = null;
@@ -186,7 +186,7 @@ class MondayService {
     }
 
     /**
-     * Obtiene las columnas reales disponibles en el Tablero 1400120846
+     * Obtiene las columnas reales disponibles en el Tablero de Monday.com
      */
     async getBoardColumns(forceRefresh = false) {
         if (!forceRefresh) {
@@ -329,7 +329,7 @@ class MondayService {
     }
 
     /**
-     * Obtiene y sincroniza todos los clientes del tablero exclusivo (1400120846) de forma ultra rápida
+     * Obtiene y sincroniza todos los clientes del tablero de Monday.com de forma ultra rápida
      */
     async syncClients(forceRefresh = false, onProgress = null) {
         if (this._isSyncing && this._syncPromise) {

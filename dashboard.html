@@ -1079,17 +1079,23 @@
 
               <div class="form-group">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                  <label for="inputCoeEmail" style="margin-bottom: 0;">Tu Correo de Google (@buk.cl)</label>
+                  <label for="inputCoeEmail" style="margin-bottom: 0;">Tu Correo de Google Workspace</label>
                   <span id="googleAccountBadge" style="display: none; font-size: 11px; padding: 2px 8px; border-radius: 12px; background: #e0f2fe; color: #0369a1; font-weight: 500;"></span>
                 </div>
-                <input type="email" id="inputCoeEmail" class="form-input" placeholder="Ej: usuario@buk.cl" disabled>
+                <input type="email" id="inputCoeEmail" class="form-input" placeholder="Ej: consultor@empresa.com" disabled>
                 <div class="form-help">💡 Tu correo Google corporativo. La extensión lo detecta automáticamente de tu perfil de Chrome para sincronizar tus reuniones de Calendar y crear tus borradores de Gmail.</div>
               </div>
 
               <div class="form-group">
-                <label for="inputBoardId">ID del Tablero Master de Clientes</label>
-                <input type="text" id="inputBoardId" class="form-input" value="1400120846" disabled>
-                <div class="form-help">Tablero: Master de Clientes Asistencia - Chile.</div>
+                <label for="inputAgendaUrl">Enlace de Agendamiento Personal (Google Calendar, Calendly, Cal.com)</label>
+                <input type="url" id="inputAgendaUrl" class="form-input" placeholder="Ej: https://calendar.app.google/... o https://calendly.com/..." disabled>
+                <div class="form-help">💡 Tu enlace de agendamiento para que los nuevos clientes reserven su reunión de Kick Off en tus plantillas y borradores.</div>
+              </div>
+
+              <div class="form-group">
+                <label for="inputBoardId">ID del Tablero de Clientes en Monday.com</label>
+                <input type="text" id="inputBoardId" class="form-input" placeholder="Ej: 1400120846" disabled>
+                <div class="form-help">ID numérico de tu tablero de gestión de clientes en Monday.com.</div>
               </div>
 
               <div class="form-group">
@@ -1189,7 +1195,7 @@
 
       <div class="modal-dialog-body">
         <div class="info-callout" style="background-color: #f0fdf4; border-left: 4px solid #10b981; color: #166534; font-size: 12px; margin-bottom: 12px; padding: 10px 14px; border-radius: 6px;">
-          Aquí puedes ver las variables disponibles, a qué columna de Monday (<strong>Tablero 1400120846</strong>) corresponden, y crear o eliminar variables para adaptarlas a tus plantillas.
+          Aquí puedes ver las variables disponibles, a qué columna de Monday.com corresponden, y crear o eliminar variables para adaptarlas a tus plantillas.
         </div>
 
         <!-- Formulario para agregar / editar variable -->
@@ -1213,14 +1219,14 @@
             <div class="form-control-group" style="margin-bottom: 0;">
               <label for="varSourceSelect" style="display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 4px;">Origen de la Información *</label>
               <select id="varSourceSelect" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; outline: none; background: #fff; box-sizing: border-box;">
-                <option value="monday">📊 Columna de Monday.com (Tablero 1400120846)</option>
+                <option value="monday">📊 Columna de Monday.com</option>
                 <option value="system_date">📅 Fecha Actual del Sistema</option>
                 <option value="system_user">👤 Nombre del Remitente</option>
                 <option value="manual">✍️ Relleno Manual en Gmail</option>
               </select>
             </div>
             <div class="form-control-group" id="varMondayColumnGroup" style="margin-bottom: 0;">
-              <label for="varMondayColumnSelect" style="display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 4px;">Columna del Tablero (1400120846) *</label>
+              <label for="varMondayColumnSelect" style="display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 4px;">Columna del Tablero en Monday.com *</label>
               <select id="varMondayColumnSelect" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; outline: none; background: #fff; box-sizing: border-box;">
                 <option value="">-- Selecciona una columna --</option>
               </select>

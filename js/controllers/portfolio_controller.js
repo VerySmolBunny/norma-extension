@@ -210,13 +210,13 @@ function appendThinkingMessage(container) {
     <div class="message-content-wrapper">
       <div class="message-meta">
         <span class="sender-name">Norma AI</span>
-        <span class="message-time">Razonando con Gemini 3.7 Flash...</span>
+        <span class="message-time">Razonando con Gemini...</span>
       </div>
       <div class="message-bubble thinking-bubble">
         <span class="dot"></span>
         <span class="dot"></span>
         <span class="dot"></span>
-        <span style="margin-left: 8px; font-size: 12px; color: #64748b; font-weight: 600;">Consultando tablero Master (1400120846)...</span>
+        <span style="margin-left: 8px; font-size: 12px; color: #64748b; font-weight: 600;">Consultando tablero de Monday.com...</span>
       </div>
     </div>
   `;
@@ -287,7 +287,7 @@ function renderWelcomeMessage() {
       </div>
       <div class="message-bubble markdown-body">
         <h3>👋 ¡Hola! Soy tu Consultor Inteligente de Monday.com</h3>
-        <p>Estoy conectado en tiempo real con tu tablero <strong>Master de Clientes Asistencia (1400120846)</strong>, métricas de atraso y calendario. Puedes hacerme cualquier consulta sobre tu cartera.</p>
+        <p>Estoy conectado en tiempo real con tu tablero de <strong>Monday.com</strong>, métricas de atraso y calendario. Puedes hacerme cualquier consulta sobre tu cartera.</p>
         <p><strong>💡 Prueba hacer clic en cualquiera de los atajos rápidos de arriba o escribe tu propia pregunta abajo.</strong></p>
       </div>
     </div>
